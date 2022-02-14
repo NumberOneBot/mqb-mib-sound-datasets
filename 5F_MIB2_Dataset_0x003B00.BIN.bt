@@ -1,8 +1,8 @@
 //------------------------------------------------
 //--- 010 Editor v12.0 Binary Template
 //
-//      File: 0x003000.BIN
-//   Authors: Dark
+//      File: 0x003B00.BIN
+//   Authors: Alex Strelets
 //   Version: 0.1
 //   Purpose: Parse the contents of the Sound Settings of MIB2
 //  Category: 
@@ -84,7 +84,6 @@ for (i = 21; i > -1; i--) {
     }
     Printf("\n");
 }
-
 Printf("\n");
 
 local int file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init 
