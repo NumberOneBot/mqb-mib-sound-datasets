@@ -1,16 +1,14 @@
 //------------------------------------------------
 //--- 010 Editor v12.0 Binary Template
 //
-//      File: 0x003000.BIN
+//      File: 0x001000.BIN
 //   Authors: Alex Strelets
-//   Version: 0.3
-//   Purpose: Parse the contents of the MIB2 Sound Channels and Effects
+//   Version: 0.2
+//   Purpose: Parse the contents of the MIB1 Sound Channels and Effects
 //  Category: 
 // File Mask: 
 //  ID Bytes: 
 //   History: 0.1 - Initial version
-//            0.2 - Limiters added
-//            0.3 - MIB1 vs MIB2 data sync
 //------------------------------------------------
 
 BigEndian();
@@ -29,6 +27,15 @@ string getSignalflow(int type) {
         default:   return "Unknown";    
     }
 }
+
+string getDynamicCompression(int type) {
+    switch (type) {
+        case 1:  return "Available";
+        case 2:  return "Disabled";
+        default: return "Invalid";    
+    }
+}
+
 
 string getFilterType(int type) {
     switch (type) {
@@ -52,8 +59,8 @@ typedef struct {
     ubyte type <bgcolor=cAqua, read=getFilterType>;
     ubyte quality <bgcolor=cLtGreen>;   // [0.2 .. 5]
     ushort frequency <bgcolor=cGreen>;  // [20 .. 20000]
-    ubyte gainOffset <bgcolor=cDkAqua>; // [-6 .. +6]
     ubyte maxGain <bgcolor=cDkAqua>;    // [0  .. 15]
+    ubyte gainOffset <bgcolor=cDkAqua>; // [-6 .. +6]
 } EQ;
 
 typedef struct {
@@ -90,15 +97,26 @@ void printEQ2(EQ2 &s, string name) {
 }
 
 byte Signalflow <bgcolor=cDkGreen, read=getSignalflow>;
+byte DynamicCompression <bgcolor=cDkPurple, read=getDynamicCompression>;
 EQ ToneControls[5];
-ubyte unknown_3 <bgcolor=cPurple>; // could be subwoofer flag
+
 EQ2 LoudnessLow;
 EQ2 LoudnessHigh;
 struct {
-    ubyte value[19] <bgcolor=cGray>;
-} byte_rise_3[7];
-EQ2 UnknownFilter_1;
-EQ2 UnknownFilter_2;
+    ubyte engine <bgcolor=cPurple>;
+    ubyte gain[18] <bgcolor=cGray>;
+    ubyte type <bgcolor=cAqua, read=getFilterType>;
+    ubyte quality <bgcolor=cLtGreen>;
+    ushort frequency <bgcolor=cGreen>;
+    ubyte fEngine <bgcolor=cPurple>;
+    ubyte fGain[18] <bgcolor=cGray>;
+} GALA;
+
+struct {
+    ubyte engine <bgcolor=cPurple>;
+    ubyte gain[18] <bgcolor=cGray>;    
+} GADK;
+
 struct {
     EQ3 Filter1;
     ubyte Filter1_coefficients[16] <bgcolor=cDkGray>;
@@ -115,21 +133,43 @@ struct {
     ubyte Phase <bgcolor=cDkYellow>;
 } CarEQ[12];
 
+EQ3 PhoneEQch1[3];
+ubyte PhoneEQch1_gain <bgcolor=cYellow>;
+EQ3 PhoneEQch2[3];
+ubyte PhoneEQch2_gain <bgcolor=cYellow>;
+EQ3 PhoneEQch3[3];
+ubyte PhoneEQch3_gain <bgcolor=cYellow>;
+EQ3 PhoneEQch4[3];
+ubyte PhoneEQch4_gain <bgcolor=cYellow>;
+EQ3 PhoneEQch5[3];
+ubyte PhoneEQch5_gain <bgcolor=cYellow>;
+EQ3 PhoneEQch6[3];
+ubyte PhoneEQch6_gain <bgcolor=cYellow>;
+
+EQ3 SpeechEQch1[3];
+ubyte SpeechEQch1_gain <bgcolor=cYellow>;
+EQ3 SpeechEQch2[3];
+ubyte SpeechEQch2_gain <bgcolor=cYellow>;
+EQ3 SpeechEQch3[3];
+ubyte SpeechEQch3_gain <bgcolor=cYellow>;
+EQ3 SpeechEQch4[3];
+ubyte SpeechEQch4_gain <bgcolor=cYellow>;
+EQ3 SpeechEQch5[3];
+ubyte SpeechEQch5_gain <bgcolor=cYellow>;
+EQ3 SpeechEQch6[3];
+ubyte SpeechEQch6_gain <bgcolor=cYellow>;
 
 
-FSeek(0x50D);
-
-// one of those bytes could be "Limiter THDmax" [0 .. 30]
-ubyte unknown_20 <bgcolor=cPurple>;
-ubyte unknown_21 <bgcolor=cPurple>;
-ubyte unknown_22 <bgcolor=cPurple>;
-
+FSeek(1363);
+ubyte THDmax <bgcolor=cPurple>;
 struct {
     ubyte attackTime <bgcolor=cDkGreen>;
     ushort releaseTime <bgcolor=cGreen>;
     byte treshold <bgcolor=cLtGreen>;
     byte holdTime <bgcolor=cAqua>;
+    byte holdDb <bgcolor=cAqua>;
 } Limiters[6];
+
 
 FSeek(FileSize() - 4);
 
@@ -147,12 +187,13 @@ local int i = 0;
 local int j = 0;
 local int k = 0;
 
-Printf("\nSIGNAL FLOW: %s\n\n", getSignalflow(Signalflow));
+Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
+Printf("DYNAMIC COMPRESSION: %s\n", getDynamicCompression(DynamicCompression));
 
 Printf("\nTONE CONTROLS\nType\tQuality\tFrequency\tMaxGain\tGainOffset\n");
 Printf("===========================================================\n");
 for (i = 0; i < 5; i++) {
-    Printf("%s\t%7g\t %6gHz\t%7g\t%10.2f\t\n",
+    Printf("%s\t%7g\t %5gHz\t%7g\t%10.2f\t\n", 
         getFilterType(ToneControls[i].type), 
         ToneControls[i].quality / 5, 
         ToneControls[i].frequency, 
@@ -163,17 +204,6 @@ Printf("===========================================================\n");
 
 printEQ2(LoudnessLow, "LOUDNESS LOW");
 printEQ2(LoudnessHigh, "LOUDNESS HIGH");
-
-Printf("\n\nUNKNOWN MATRIX 19 X 7\nGain:\t");
-for ( i = 0; i < 7; i++ ) {
-    for ( j = 0; j < 19; j++ ) {
-        Printf("%4g ", byte_rise_3[i].value[j]);
-    }
-    Printf("\n\t");
-};
-
-printEQ2(UnknownFilter_1, "UNKNOWN FILTER 1");
-printEQ2(UnknownFilter_2, "UNKNOWN FILTER 2");
 
 float calcGain (byte value) {
     return value / 12.5;
@@ -239,8 +269,9 @@ for (i = 0; i < 6; i++) {
         i+1,
         Limiters[i].attackTime / 20, // [0.5 .. 20]
         Limiters[i].releaseTime,     // [5 .. 2000]
-        Limiters[i].treshold / -24,   // [-24 ..  0]
+        Limiters[i].treshold / -24,  // [-24 ..  0]
         Limiters[i].holdTime / 20    // [0.5 .. 20]
+        //Limiters[i].holdDb / -1      // [-1 .. 0]
     );
 }
 Printf("========================================================");
