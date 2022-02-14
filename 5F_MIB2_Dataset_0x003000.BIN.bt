@@ -52,10 +52,10 @@ string getFilterType(int type) {
 
 typedef struct {
     ubyte type <bgcolor=cAqua, read=getFilterType>;
-    ubyte quality <bgcolor=cLtGreen>; // [0.2 .. 5]
-    ushort frequency <bgcolor=cGreen>; // [20 .. 20000]
-    ubyte gainOffset <bgcolor=cDkAqua>; // 16
-    ubyte maxGain <bgcolor=cDkAqua>; // [-6 .. +6]
+    ubyte quality <bgcolor=cLtGreen>;   // [0.2 .. 5]
+    ushort frequency <bgcolor=cGreen>;  // [20 .. 20000]
+    ubyte gainOffset <bgcolor=cDkAqua>; // [-6 .. +6]
+    ubyte maxGain <bgcolor=cDkAqua>;    // [0  .. 15]
 } EQ;
 
 typedef struct {
@@ -102,25 +102,28 @@ struct {
     EQ3 Filter5;
     EQ3 Filter6;
     EQ3 Filter7;
-    byte Gain <bgcolor=cYellow>;
-    ubyte Delay <bgcolor=cDkYellow>;
+    byte Gain <bgcolor=cLtYellow>;
+    ubyte Delay <bgcolor=cYellow>;
     ubyte Phase <bgcolor=cDkYellow>;
 } CarEQ[12];
 
 FSeek(0x50D);
+
 ubyte unknown_20 <bgcolor=cPurple>;
 ubyte unknown_21 <bgcolor=cPurple>;
 ubyte unknown_22 <bgcolor=cPurple>;
 struct {
-    ubyte value[5] <bgcolor=cBlue>;
-} something[6];
-
+    ubyte attackTime <bgcolor=cDkGreen>;
+    ushort releaseTime <bgcolor=cGreen>;
+    byte treshold <bgcolor=cLtGreen>;
+    byte holdTime <bgcolor=cAqua>;
+} Limiters[6];
 
 FSeek(FileSize() - 4);
 
 struct {
-    char major <bgcolor=cDkGreen>;
-    char minor <bgcolor=cDkGreen>;
+    char major <bgcolor=cDkBlue>;
+    char minor <bgcolor=cDkBlue>;
 } version;
 ushort checksum <bgcolor=cRed>;
 
@@ -131,34 +134,24 @@ ushort checksum <bgcolor=cRed>;
 local int i = 0;
 local int j = 0;
 local int k = 0;
-local byte gainOffset;
-local byte maxGain;
 
 Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
 
 Printf("\nTONE CONTROLS\nType\tQuality\tFrequency\tGainOffset\t MaxGain\n");
 Printf("=========================================================\n");
 for (i = 0; i < 5; i++) {
-    // if (ToneControls[i].type == 0) {
-    //     Printf("%s\n", 
-    //         getFilterType(ToneControls[i].type));
-    // } else {
-    
-        gainOffset = ToneControls[i].gainOffset / 16;
-        maxGain = ToneControls[i].maxGain / 12 - 6;
-        Printf("%s\t%7.2f\t %6gHz\t%10g\t%8g\t\n", 
-            getFilterType(ToneControls[i].type), 
-            ToneControls[i].quality / 5, 
-            ToneControls[i].frequency, 
-            gainOffset,
-            maxGain);
-    // }
+    Printf("%s\t%7g\t %6gHz\t%10g\t%8g\t\n", 
+        getFilterType(ToneControls[i].type), 
+        ToneControls[i].quality / 5, 
+        ToneControls[i].frequency, 
+        ToneControls[i].gainOffset / 6,
+        ToneControls[i].maxGain / 15);
 }
 Printf("=========================================================\n");
 
 Printf("\nLOUDNESS LOW\nType\tQuality\tFrequency\t\n");
 Printf("=================================\n");
-Printf("%s\t%7.2f\t %6gHz\t\n", 
+Printf("%s\t%7g\t %6gHz\t\n", 
     getFilterType(LoudnessLow.type), 
     LoudnessLow.quality / 5, 
     LoudnessLow.frequency); 
@@ -169,7 +162,7 @@ for (i = 0; i < 18; i++) {
 
 Printf("\nLOUDNESS HIGH\nType\tQuality\tFrequency\t\n");
 Printf("=================================\n");
-Printf("%s\t%7.2f\t %6gHz\t\n", 
+Printf("%s\t%7g\t %6gHz\t\n", 
     getFilterType(LoudnessHigh.type), 
     LoudnessHigh.quality / 5, 
     LoudnessHigh.frequency); 
@@ -188,7 +181,7 @@ for ( i = 0; i < 7; i++ ) {
 
 Printf("\nUNKNOWN FILTER 1\nType\tQuality\tFrequency\t\n");
 Printf("=================================\n");
-Printf("%s\t%7.2f\t %6gHz\t\n", 
+Printf("%s\t%7g\t %6gHz\t\n", 
     getFilterType(UnknownFilter_1.type), 
     UnknownFilter_1.quality / 5, 
     UnknownFilter_1.frequency); 
@@ -199,7 +192,7 @@ for (i = 0; i < 19; i++) {
 
 Printf("\n\nUNKNOWN FILTER 2\nType\tQuality\tFrequency\t\n");
 Printf("=================================\n");
-Printf("%s\t%7.2f\t %6gHz\t\n", 
+Printf("%s\t%7g\t %6gHz\t\n", 
     getFilterType(UnknownFilter_2.type), 
     UnknownFilter_2.quality / 5, 
     UnknownFilter_2.frequency); 
@@ -225,37 +218,37 @@ for (j = 0; j < 2; j++) {
         Printf("---------------------------------------------------\n");
         Printf("Type\tQuality\tFrequency\t     Gain\n");        
         Printf("===================================================\n");
-        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+        Printf("%s\t%7g\t %6gHz\t    %5.2f\n", 
             getFilterType(CarEQ[k].Filter1.type), 
             CarEQ[k].Filter1.quality / 5, 
             CarEQ[k].Filter1.frequency,
             calcGain(CarEQ[k].Filter1.gain)); 
-        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+        Printf("%s\t%7g\t %6gHz\t    %5.2f\n", 
             getFilterType(CarEQ[k].Filter2.type), 
             CarEQ[k].Filter2.quality / 5, 
             CarEQ[k].Filter2.frequency,
             calcGain(CarEQ[k].Filter2.gain)); 
-        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+        Printf("%s\t%7g\t %6gHz\t    %5.2f\n", 
             getFilterType(CarEQ[k].Filter3.type), 
             CarEQ[k].Filter3.quality / 5, 
             CarEQ[k].Filter3.frequency,
             calcGain(CarEQ[k].Filter3.gain)); 
-        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+        Printf("%s\t%7g\t %6gHz\t    %5.2f\n", 
             getFilterType(CarEQ[k].Filter4.type), 
             CarEQ[k].Filter4.quality / 5, 
             CarEQ[k].Filter4.frequency,
             calcGain(CarEQ[k].Filter4.gain)); 
-        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+        Printf("%s\t%7g\t %6gHz\t    %5.2f\n", 
             getFilterType(CarEQ[k].Filter5.type), 
             CarEQ[k].Filter5.quality / 5, 
             CarEQ[k].Filter5.frequency,
             calcGain(CarEQ[k].Filter5.gain)); 
-        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+        Printf("%s\t%7g\t %6gHz\t    %5.2f\n", 
             getFilterType(CarEQ[k].Filter6.type), 
             CarEQ[k].Filter6.quality / 5, 
             CarEQ[k].Filter6.frequency,
             calcGain(CarEQ[k].Filter6.gain)); 
-        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+        Printf("%s\t%7g\t %6gHz\t    %5.2f\n", 
             getFilterType(CarEQ[k].Filter7.type), 
             CarEQ[k].Filter7.quality / 5, 
             CarEQ[k].Filter7.frequency,
@@ -264,13 +257,20 @@ for (j = 0; j < 2; j++) {
     }
 }
 
-Printf("UNKNOWN\n");
+Printf("\nLIMITERS\n");
+Printf("Channel\tAttack\tRelease\tTreshold\t   Hold\n");
+Printf("========================================================\n");
 for (i = 0; i < 6; i++) {
-    for (j = 0; j < 5; j++) {
-        Printf("%3g  ", something[i].value[j]);
-    }
-    Printf("\n");
+    Printf("%i\t  %4.1f\t   %4g\t     %3g\t   %4.1f\n", 
+        i+1,
+        Limiters[i].attackTime / 20, // [0.5 .. 20]
+        Limiters[i].releaseTime,     // [5 .. 2000]
+        Limiters[i].treshold / -24,   // [-24 ..  0]
+        Limiters[i].holdTime / 20    // [0.5 .. 20]
+    );
 }
+Printf("========================================================");
+
 
 local ushort file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init 
 Printf("\n\nFILE CHECKSUM: %.04X", file_checksum);  
