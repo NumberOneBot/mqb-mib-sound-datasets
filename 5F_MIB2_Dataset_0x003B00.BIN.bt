@@ -1,0 +1,91 @@
+//------------------------------------------------
+//--- 010 Editor v12.0 Binary Template
+//
+//      File: 0x003000.BIN
+//   Authors: Dark
+//   Version: 0.1
+//   Purpose: Parse the contents of the Sound Settings of MIB2
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 0.1 - Initial version
+
+//------------------------------------------------
+// legend: 
+// yellow/aqua = uncertain
+// red         = checksum
+// green       = confirmed
+// gray        = seemingly irrelevant
+// blue        = special
+
+
+LittleEndian();
+
+typedef struct {
+    byte min <bgcolor=cDkAqua>;
+    byte center <bgcolor=cAqua>;
+    byte max <bgcolor=cLtAqua>;
+} Knob;
+
+struct {
+    byte min <bgcolor=cDkGreen>;
+    byte points <bgcolor=cGreen>;
+    byte max <bgcolor=cLtGreen>;
+} VolumeBar;
+
+struct {
+    Knob Balance;
+    Knob FadeForwardBackward;
+    Knob Trebble;
+    Knob Higher;
+    Knob Middle;
+    Knob Lower;
+    Knob Bass;
+    Knob Subwoofer;
+} Channels;
+
+ubyte unknown_4 <bgcolor=cDkRed>;
+ubyte Equ_bands <bgcolor=cRed>;
+ubyte unknown_6 <bgcolor=cDkRed>;
+ubyte effects_1 <bgcolor=cPurple>;
+ubyte effects_2 <bgcolor=cPurple>;
+struct {
+    ubyte value[19] <bgcolor=cBlack>;
+} Equalizer;
+
+FSeek(51);
+struct {
+    char major <bgcolor=cDkGreen>;
+    char minor <bgcolor=cDkGreen>;
+} DatasetVersion;
+ushort checksum <bgcolor=cRed>;
+
+local int i;
+local int j;
+Printf("\nGLOBAL EQUALIZER\n");
+Printf("  0Hz\t  10Hz\t  20Hz\t  30Hz\t  40Hz\t  50Hz\t 100Hz\t 200Hz\t 300Hz\t 400Hz\t 500Hz\t 1kHz\t 2kHz\t 3kHz\t 4kHz\t 5kHz\t 10kHz\t 15kHz\t 20kHz\t\n");
+local int k;
+for (i = 21; i > -1; i--) {
+    for (j = 0; j < 19; j++) {
+        k = Equalizer.value[j] / (j+1) - 10;
+        if (k == i-10) {
+            if (k < 0) {
+                if (k < -9) {
+                    Printf(" =%i=\t", k);    
+                } else {
+                    Printf(" =%i==\t", k);    
+                }
+            } else {
+                Printf(" ==%i==\t", k);    
+            }
+        } else {
+            Printf("   |\t");    
+        }        
+    }
+    Printf("\n");
+}
+
+Printf("\n");
+
+local int file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init 
+Printf("\nFILE CHECKSUM: %.04X", file_checksum);  

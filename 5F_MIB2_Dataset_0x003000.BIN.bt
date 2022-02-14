@@ -1,0 +1,276 @@
+//------------------------------------------------
+//--- 010 Editor v12.0 Binary Template
+//
+//      File: 0x003000.BIN
+//   Authors: Dark
+//   Version: 0.1
+//   Purpose: Parse the contents of the MIB2 Sound Channels and Equalizer
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 0.1 - Initial version
+
+//------------------------------------------------
+
+BigEndian();
+
+string getSignalflow(int type) {
+    switch (type) {
+        case 0x10: return "2ch (4.0)";
+        case 0x20: return "4ch (8.0)";
+        case 0x21: return "4ch - 2ch compatible (8.0 / 4.0)";
+        case 0x30: return "6ch center sub (9.1)";
+        case 0x31: return "6ch center sub - 2/4ch compatible (9.1 / 8.0 / 4.0)";
+        case 0x32: return "6ch doublesub (8.2)";
+        case 0x33: return "6ch doublesub - 2/4ch compatible (8.2 / 8.0 / 4.0)";
+        case 0x34: return "6ch frontwoofer (9.1)";
+        case 0x35: return "6ch frontwoofer - 2/4ch compatible (9.1 / 8.0 / 4.0)";
+        default:   return "Unknown";    
+    }
+}
+
+byte Signalflow <bgcolor=cDkGreen, read=getSignalflow>;
+
+
+string getFilterType(int type) {
+    switch (type) {
+        case 0x00: return "Bypass";    
+        case 0x01: return "Shelf 1 High";    
+        case 0x02: return "Shelf 2 High";    
+        case 0x03: return "Shelf 1 Low";   
+        case 0x04: return "Shelf 2 Low";    
+        case 0x05: return "Peak 1";    
+        case 0x06: return "Peak 2";    
+        case 0x07: return "Highpass 1";
+        case 0x08: return "Highpass 2";
+        case 0x09: return "Lowpass 1";
+        case 0x0A: return "Lowpass 2";
+        case 0x10: return "Coefficients";
+        default:   return "Unknown";
+    }
+}
+
+typedef struct {
+    ubyte type <bgcolor=cAqua, read=getFilterType>;
+    ubyte quality <bgcolor=cLtGreen>; // [0.2 .. 5]
+    ushort frequency <bgcolor=cGreen>; // [20 .. 20000]
+    ubyte gainOffset <bgcolor=cDkAqua>; // 16
+    ubyte maxGain <bgcolor=cDkAqua>; // [-6 .. +6]
+} EQ;
+
+typedef struct {
+    ubyte type <bgcolor=cAqua, read=getFilterType>;
+    ubyte quality <bgcolor=cLtGreen>;
+    ushort frequency <bgcolor=cGreen>;
+} EQ2;
+
+typedef struct {
+    ubyte type <bgcolor=cAqua, read=getFilterType>;
+    ubyte quality <bgcolor=cLtGreen>;
+    ushort frequency <bgcolor=cGreen>;
+    byte gain <bgcolor=cDkAqua>; // [-12.6 .. 12.6]
+} EQ3;
+
+EQ ToneControls[5];
+
+ubyte unknown_3 <bgcolor=cBlack>; // could be subwoofer flag
+EQ2 LoudnessLow;
+byte LL_volume[18] <bgcolor=cDkAqua>;
+
+ubyte always_68_1 <bgcolor=cBlack>;
+EQ2 LoudnessHigh;
+byte LH_volume[18] <bgcolor=cDkAqua>;
+
+ubyte always_68_2 <bgcolor=cBlack>;
+struct {
+    ubyte value[19] <bgcolor=cGray>;
+} byte_rise_3[7];
+
+EQ2 UnknownFilter_1;
+ubyte UF_1_volume[19] <bgcolor=cDkAqua>;
+EQ2 UnknownFilter_2;
+ubyte UF_2_volume[19] <bgcolor=cDkAqua>;
+
+struct {
+    EQ3 Filter1;
+    ubyte Filter1_coefficients[16] <bgcolor=cDkGray>;
+    EQ3 Filter2;
+    ubyte Filter2_coefficients[16] <bgcolor=cDkGray>;
+    EQ3 Filter3;
+    ubyte Filter3_coefficients[16] <bgcolor=cDkGray>;
+    EQ3 Filter4;
+    EQ3 Filter5;
+    EQ3 Filter6;
+    EQ3 Filter7;
+    byte Gain <bgcolor=cYellow>;
+    ubyte Delay <bgcolor=cDkYellow>;
+    ubyte Phase <bgcolor=cDkYellow>;
+} CarEQ[12];
+
+FSeek(0x50D);
+ubyte unknown_20 <bgcolor=cPurple>;
+ubyte unknown_21 <bgcolor=cPurple>;
+ubyte unknown_22 <bgcolor=cPurple>;
+struct {
+    ubyte value[5] <bgcolor=cBlue>;
+} something[6];
+
+
+FSeek(FileSize() - 4);
+
+struct {
+    char major <bgcolor=cDkGreen>;
+    char minor <bgcolor=cDkGreen>;
+} version;
+ushort checksum <bgcolor=cRed>;
+
+////////////////////////
+/// PARSING FINISHED ///
+////////////////////////
+
+local int i = 0;
+local int j = 0;
+local int k = 0;
+local byte gainOffset;
+local byte maxGain;
+
+Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
+
+Printf("\nTONE CONTROLS\nType\tQuality\tFrequency\tGainOffset\t MaxGain\n");
+Printf("=========================================================\n");
+for (i = 0; i < 5; i++) {
+    // if (ToneControls[i].type == 0) {
+    //     Printf("%s\n", 
+    //         getFilterType(ToneControls[i].type));
+    // } else {
+    
+        gainOffset = ToneControls[i].gainOffset / 16;
+        maxGain = ToneControls[i].maxGain / 12 - 6;
+        Printf("%s\t%7.2f\t %6gHz\t%10g\t%8g\t\n", 
+            getFilterType(ToneControls[i].type), 
+            ToneControls[i].quality / 5, 
+            ToneControls[i].frequency, 
+            gainOffset,
+            maxGain);
+    // }
+}
+Printf("=========================================================\n");
+
+Printf("\nLOUDNESS LOW\nType\tQuality\tFrequency\t\n");
+Printf("=================================\n");
+Printf("%s\t%7.2f\t %6gHz\t\n", 
+    getFilterType(LoudnessLow.type), 
+    LoudnessLow.quality / 5, 
+    LoudnessLow.frequency); 
+Printf("=================================\nVolume:\n");
+for (i = 0; i < 18; i++) {
+    Printf("%3g  ", LL_volume[i]); // could be volume * 1.7, need to verify 
+} Printf("\n");
+
+Printf("\nLOUDNESS HIGH\nType\tQuality\tFrequency\t\n");
+Printf("=================================\n");
+Printf("%s\t%7.2f\t %6gHz\t\n", 
+    getFilterType(LoudnessHigh.type), 
+    LoudnessHigh.quality / 5, 
+    LoudnessHigh.frequency); 
+Printf("=================================\nVolume:\n");
+for (i = 0; i < 18; i++) {
+    Printf("%3g  ", LH_volume[i]); // could be volume * 1.7, need to verify 
+}
+
+Printf("\n\nUNKNOWN MATRIX 19 X 7\n");
+for ( i = 0; i < 7; i++ ) {
+    for ( j = 0; j < 18; j++ ) {
+        Printf("%3g  ", byte_rise_3[i].value[j]);
+    }
+    Printf("\n");
+};
+
+Printf("\nUNKNOWN FILTER 1\nType\tQuality\tFrequency\t\n");
+Printf("=================================\n");
+Printf("%s\t%7.2f\t %6gHz\t\n", 
+    getFilterType(UnknownFilter_1.type), 
+    UnknownFilter_1.quality / 5, 
+    UnknownFilter_1.frequency); 
+Printf("=================================\nVolume:\n");
+for (i = 0; i < 19; i++) {
+    Printf("%3g  ", UF_1_volume[i]); // could be volume * 1.7, need to verify 
+}
+
+Printf("\n\nUNKNOWN FILTER 2\nType\tQuality\tFrequency\t\n");
+Printf("=================================\n");
+Printf("%s\t%7.2f\t %6gHz\t\n", 
+    getFilterType(UnknownFilter_2.type), 
+    UnknownFilter_2.quality / 5, 
+    UnknownFilter_2.frequency); 
+Printf("=================================\nVolume:\n");
+for (i = 0; i < 19; i++) {
+    Printf("%3g  ", UF_2_volume[i]); // could be volume * 1.7, need to verify 
+}
+
+float calcGain (byte value) {
+    return value / 12.5;
+}
+
+Printf("\n\n\n");
+for (j = 0; j < 2; j++) {
+    Printf("[ CarEQ%i ]\n\n", j+1);
+    for (i = 0; i < 6; i++) {
+        k = j * 6 + i;
+        Printf("CHANNEL %i [ Gain: %3.2f  Delay: %2gms  Phase: %3g° ]\n", 
+            i+1, 
+            calcGain(CarEQ[k].Gain), 
+            CarEQ[k].Delay, 
+            CarEQ[k].Phase > 0 ? 180 : 0);
+        Printf("---------------------------------------------------\n");
+        Printf("Type\tQuality\tFrequency\t     Gain\n");        
+        Printf("===================================================\n");
+        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+            getFilterType(CarEQ[k].Filter1.type), 
+            CarEQ[k].Filter1.quality / 5, 
+            CarEQ[k].Filter1.frequency,
+            calcGain(CarEQ[k].Filter1.gain)); 
+        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+            getFilterType(CarEQ[k].Filter2.type), 
+            CarEQ[k].Filter2.quality / 5, 
+            CarEQ[k].Filter2.frequency,
+            calcGain(CarEQ[k].Filter2.gain)); 
+        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+            getFilterType(CarEQ[k].Filter3.type), 
+            CarEQ[k].Filter3.quality / 5, 
+            CarEQ[k].Filter3.frequency,
+            calcGain(CarEQ[k].Filter3.gain)); 
+        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+            getFilterType(CarEQ[k].Filter4.type), 
+            CarEQ[k].Filter4.quality / 5, 
+            CarEQ[k].Filter4.frequency,
+            calcGain(CarEQ[k].Filter4.gain)); 
+        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+            getFilterType(CarEQ[k].Filter5.type), 
+            CarEQ[k].Filter5.quality / 5, 
+            CarEQ[k].Filter5.frequency,
+            calcGain(CarEQ[k].Filter5.gain)); 
+        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+            getFilterType(CarEQ[k].Filter6.type), 
+            CarEQ[k].Filter6.quality / 5, 
+            CarEQ[k].Filter6.frequency,
+            calcGain(CarEQ[k].Filter6.gain)); 
+        Printf("%s\t%7.2f\t %6gHz\t    %3.2f\n", 
+            getFilterType(CarEQ[k].Filter7.type), 
+            CarEQ[k].Filter7.quality / 5, 
+            CarEQ[k].Filter7.frequency,
+            calcGain(CarEQ[k].Filter7.gain)); 
+        Printf("===================================================\n\n");
+    }
+}
+
+Printf("UNKNOWN\n");
+for (i = 0; i < 6; i++) {
+    for (j = 0; j < 5; j++) {
+        Printf("%3g  ", something[i].value[j]);
+    }
+    Printf("\n");
+}
+
+local ushort file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init 
+Printf("\n\nFILE CHECKSUM: %.04X", file_checksum);  
