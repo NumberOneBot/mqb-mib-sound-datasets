@@ -4,5 +4,9 @@ Every ZDC container for MIB2 units contain several datasets describing car's sou
 
 ![ZDC](https://github.com/NumberOneBot/mqb-mib2-sound-datasets/blob/main/zdc.png?raw=true)
 
-This repository is meant to research the details inside sound datasets. 
+This repository is meant to research the details of sound datasets. 
 
+## Requirements
+- A MQB platform vehicle
+- Hex-editing skills
+- [010 editor](https://www.sweetscape.com/010editor/)
