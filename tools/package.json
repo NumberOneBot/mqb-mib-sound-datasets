@@ -1,0 +1,8 @@
+{
+    "dependencies": {
+        "cli-color": "^2.0.1",
+        "minimist": "^1.2.5",
+        "pkg": "^5.5.2",
+        "polycrc": "^1.1.0"
+    }
+}

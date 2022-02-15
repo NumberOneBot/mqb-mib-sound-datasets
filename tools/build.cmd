@@ -1,0 +1,1 @@
+npx pkg zdc2bin.js -t node16-win-x64 -o bin/zdc2bin.exe -C GZip & npx pkg dataset2bin.js -o bin/dataset2bin.exe -t node16-win-x64 -C GZip & npx pkg bin2dataset.js -o bin/bin2dataset.exe -t node16-win-x64 -C GZip
