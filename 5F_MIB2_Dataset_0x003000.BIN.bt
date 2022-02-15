@@ -71,27 +71,27 @@ typedef struct {
 } EQ3;
 
 void printEQ2(EQ2 &s, string name) {
-    Printf("\n%s\nType\tQuality\tFrequency\t\n", name);
+    Printf("\n%s\nType\tQuality\tFrequency\n", name);
     Printf("=================================\n");
-    Printf("%s\t%7g\t %6gHz\t\n", 
+    Printf("%s\t%7g\t %6gHz\n", 
         getFilterType(s.type), 
         s.quality / 5, 
         s.frequency); 
     Printf("=================================\n");
     Printf("Volume:\t");
     for (i = 0; i < 19; i++) {
-        Printf("%4g ", 18 - i);
+        Printf("%3g ", 18 - i);
     }
     Printf("\nGain:\t");
     for (i = 0; i < 19; i++) {
-        Printf("%4g ", s.gain[i]); // could be volume * 1.7, need to verify 
+        Printf("%3g ", s.gain[i] ); // could be volume * 1.7, need to verify 
     }
     Printf("\n");
 }
 
 byte Signalflow <bgcolor=cDkGreen, read=getSignalflow>;
 EQ ToneControls[5];
-ubyte unknown_3 <bgcolor=cPurple>; // could be subwoofer flag
+ubyte Subwoofer_maxGain <bgcolor=cPurple>; // subwoofer gain ???
 EQ2 LoudnessLow;
 EQ2 LoudnessHigh;
 struct {
@@ -149,10 +149,10 @@ local int k = 0;
 
 Printf("\nSIGNAL FLOW: %s\n\n", getSignalflow(Signalflow));
 
-Printf("\nTONE CONTROLS\nType\tQuality\tFrequency\tMaxGain\tGainOffset\n");
+Printf("\nTONE CONTROLS\nType\tQuality\tFrequency\t  MaxGain\tGainOffset\n");
 Printf("===========================================================\n");
 for (i = 0; i < 5; i++) {
-    Printf("%s\t%7g\t %6gHz\t%7g\t%10.2f\t\n",
+    Printf("%s\t%7g\t %6gHz\t  %7.2f\t%10.2f\n",
         getFilterType(ToneControls[i].type), 
         ToneControls[i].quality / 5, 
         ToneControls[i].frequency, 
@@ -160,6 +160,7 @@ for (i = 0; i < 5; i++) {
         ToneControls[i].gainOffset / 12);
 }
 Printf("===========================================================\n");
+Printf("Subwoofer\t\t\t  %7.2f\n", Subwoofer_maxGain / 15);
 
 printEQ2(LoudnessLow, "LOUDNESS LOW");
 printEQ2(LoudnessHigh, "LOUDNESS HIGH");
@@ -167,7 +168,7 @@ printEQ2(LoudnessHigh, "LOUDNESS HIGH");
 Printf("\n\nUNKNOWN MATRIX 19 X 7\nGain:\t");
 for ( i = 0; i < 7; i++ ) {
     for ( j = 0; j < 19; j++ ) {
-        Printf("%4g ", byte_rise_3[i].value[j]);
+        Printf("%3g ", byte_rise_3[i].value[j]);
     }
     Printf("\n\t");
 };
@@ -184,7 +185,7 @@ for (j = 0; j < 2; j++) {
     Printf("[ CarEQ%i ]\n\n", j+1);
     for (i = 0; i < 6; i++) {
         k = j * 6 + i;
-        Printf("CHANNEL %i [ Gain: %5.2f Delay: %2gms Phase: %3g°] \n", 
+        Printf("CHANNEL %i [ Gain: %5.2f Delay: %2gms Phase: %3g°]\n", 
             i+1, 
             calcGain(CarEQ[k].Gain), 
             CarEQ[k].Delay, 

@@ -22,52 +22,72 @@
 LittleEndian();
 
 typedef struct {
-    byte min <bgcolor=cDkAqua>;
-    byte center <bgcolor=cAqua>;
-    byte max <bgcolor=cLtAqua>;
+    byte min <bgcolor=cDkGreen>;
+    byte center <bgcolor=cGreen>;
+    byte max <bgcolor=cLtGreen>;
 } Knob;
 
 struct {
-    byte min <bgcolor=cDkGreen>;
-    byte points <bgcolor=cGreen>;
-    byte max <bgcolor=cLtGreen>;
+    byte min <bgcolor=cDkYellow>;
+    byte unknown <bgcolor=cYellow>;
+    byte max <bgcolor=cLtYellow>;
 } VolumeBar;
 
 struct {
     Knob Balance;
-    Knob FadeForwardBackward;
+    Knob Fade;
     Knob Trebble;
     Knob Higher;
     Knob Middle;
     Knob Lower;
     Knob Bass;
     Knob Subwoofer;
-} Channels;
+} ToneControls;
 
 ubyte unknown_4 <bgcolor=cDkRed>;
-ubyte Equ_bands <bgcolor=cRed>;
+ubyte Tone_bands <bgcolor=cRed>;
 ubyte unknown_6 <bgcolor=cDkRed>;
 ubyte effects_1 <bgcolor=cPurple>;
 ubyte effects_2 <bgcolor=cPurple>;
 struct {
-    ubyte value[19] <bgcolor=cBlack>;
-} Equalizer;
+    ubyte value[19] <bgcolor=cLtGray>;
+} UnknownGain;
 
 FSeek(51);
 struct {
-    char major <bgcolor=cDkGreen>;
-    char minor <bgcolor=cDkGreen>;
+    char major <bgcolor=cDkBlue>;
+    char minor <bgcolor=cDkBlue>;
 } DatasetVersion;
 ushort checksum <bgcolor=cRed>;
 
 local int i;
 local int j;
+
+Printf("\nVOLUME\n");
+Printf("Bar:\t [%2g .. %2g .. %3g ]\n", VolumeBar.min, VolumeBar.unknown, VolumeBar.max);
+
+Printf("\nKNOBS\n");
+Printf("Balance:\t [%3g .. %1g .. %1g ]\n",   ToneControls.Balance.min, ToneControls.Balance.center, ToneControls.Balance.max);
+Printf("Fade:\t [%3g .. %1g .. %1g ]\n",      ToneControls.Fade.min, ToneControls.Fade.center, ToneControls.Fade.max);
+Printf("Trebble:\t [%3g .. %1g .. %1g ]\n",   ToneControls.Trebble.min, ToneControls.Trebble.center, ToneControls.Trebble.max);
+Printf("Higher:\t [%3g .. %1g .. %1g ]\n",    ToneControls.Higher.min, ToneControls.Higher.center, ToneControls.Higher.max);
+Printf("Middle:\t [%3g .. %1g .. %1g ]\n",    ToneControls.Middle.min, ToneControls.Middle.center, ToneControls.Middle.max);
+Printf("Lower:\t [%3g .. %1g .. %1g ]\n",     ToneControls.Lower.min, ToneControls.Lower.center, ToneControls.Lower.max);
+Printf("Bass:\t [%3g .. %1g .. %1g ]\n",      ToneControls.Bass.min, ToneControls.Bass.center, ToneControls.Bass.max);
+Printf("Subwoofer:\t [%3g .. %1g .. %1g ]\n", ToneControls.Subwoofer.min, ToneControls.Subwoofer.center, ToneControls.Subwoofer.max);
+
+Printf("\nUNKNOWN GAIN\n");
+for (j = 0; j < 19; j++) {
+    Printf("%4g  ", UnknownGain.value[j]);
+}
+
+/*
 Printf("\nGLOBAL EQUALIZER\n");
 Printf("  0Hz\t  10Hz\t  20Hz\t  30Hz\t  40Hz\t  50Hz\t 100Hz\t 200Hz\t 300Hz\t 400Hz\t 500Hz\t 1kHz\t 2kHz\t 3kHz\t 4kHz\t 5kHz\t 10kHz\t 15kHz\t 20kHz\t\n");
 local int k;
 for (i = 21; i > -1; i--) {
     for (j = 0; j < 19; j++) {
-        k = Equalizer.value[j] / (j+1) - 10;
+        k = UnknownGain.value[j] / (j+1) - 10;
         if (k == i-10) {
             if (k < 0) {
                 if (k < -9) {
@@ -85,6 +105,7 @@ for (i = 21; i > -1; i--) {
     Printf("\n");
 }
 Printf("\n");
+*/
 
 local int file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init 
-Printf("\nFILE CHECKSUM: %.04X", file_checksum);  
+Printf("\n\nFILE CHECKSUM: %.04X", file_checksum);  
