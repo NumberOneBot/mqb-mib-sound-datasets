@@ -190,10 +190,10 @@ local int k = 0;
 Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
 Printf("DYNAMIC COMPRESSION: %s\n", getDynamicCompression(DynamicCompression));
 
-Printf("\nTONE CONTROLS\nType\tQuality\tFrequency\tMaxGain\tGainOffset\n");
+Printf("\nTONE CONTROLS\nType\tQuality\tFrequency\t MaxGain\tGainOffset\n");
 Printf("===========================================================\n");
 for (i = 0; i < 5; i++) {
-    Printf("%s\t%7g\t %5gHz\t%7g\t%10.2f\t\n", 
+    Printf("%s\t%7g\t %5gHz\t   %5.2f\t%10.2f\t\n", 
         getFilterType(ToneControls[i].type), 
         ToneControls[i].quality / 5, 
         ToneControls[i].frequency, 
@@ -206,7 +206,7 @@ printEQ2(LoudnessLow, "LOUDNESS LOW");
 printEQ2(LoudnessHigh, "LOUDNESS HIGH");
 
 float calcGain (byte value) {
-    return value / 12.5;
+    return (float) value / 12.5;
 }
 
 Printf("\n\n");

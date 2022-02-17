@@ -19,13 +19,13 @@ string getSignalflow(int type) {
     switch (type) {
         case 0x10: return "2ch (4.0)";
         case 0x20: return "4ch (8.0)";
-        case 0x21: return "4ch - 2ch compatible (8.0 / 4.0)";
+        case 0x21: return "4ch / 2ch compatible (8.0 / 4.0)";
         case 0x30: return "6ch center sub (9.1)";
-        case 0x31: return "6ch center sub - 2/4ch compatible (9.1 / 8.0 / 4.0)";
+        case 0x31: return "6ch center sub / 2/4ch compatible (9.1 / 8.0 / 4.0)";
         case 0x32: return "6ch doublesub (8.2)";
-        case 0x33: return "6ch doublesub - 2/4ch compatible (8.2 / 8.0 / 4.0)";
+        case 0x33: return "6ch doublesub / 2/4ch compatible (8.2 / 8.0 / 4.0)";
         case 0x34: return "6ch frontwoofer (9.1)";
-        case 0x35: return "6ch frontwoofer - 2/4ch compatible (9.1 / 8.0 / 4.0)";
+        case 0x35: return "6ch frontwoofer / 2/4ch compatible (9.1 / 8.0 / 4.0)";
         default:   return "Unknown";    
     }
 }
@@ -70,7 +70,15 @@ typedef struct {
     byte gain <bgcolor=cDkAqua>; // [-12.5 .. 12.5]
 } EQ3;
 
-void printEQ2(EQ2 &s, string name) {
+float calcGain (byte value) {
+    return (float) value / 12.5;
+}
+
+float calcAbsGain (ubyte value) {
+    return (float) value / 12.5;
+}
+
+void printEQ2(EQ2 &s, string name, int unknownFlag) {
     Printf("\n%s\nType\tQuality\tFrequency\n", name);
     Printf("==================================\n");
     Printf("%s\t%7g\t %6gHz\n", 
@@ -78,25 +86,28 @@ void printEQ2(EQ2 &s, string name) {
         s.quality / 5, 
         s.frequency); 
     Printf("==================================\n");
-    Printf("Volume:\t");
-    for (i = 0; i < 19; i++) {
-        Printf("%3g ", 18 - i);
+    if (!unknownFlag) {
+        Printf("Volume:\t");
+        for (i = 0; i < 19; i++) {
+            Printf("%5g ", 18 - i);
+        }
+        Printf("\n");
     }
-    Printf("\nGain:\t");
-    for (i = 0; i < 19; i++) {
-        Printf("%3g ", s.gain[i]); 
-    }
+        Printf("Gain:\t");
+        for (i = 0; i < 19; i++) {
+            Printf("%5.2f ", calcAbsGain(s.gain[i])); 
+        }
     Printf("\n");
 }
 
 byte Signalflow <bgcolor=cDkGreen, read=getSignalflow>;
 EQ ToneControls[5];
-ubyte Subwoofer_maxGain <bgcolor=cPurple>; // subwoofer gain ???
+ubyte Subwoofer_maxGain <bgcolor=cLtYellow>; // subwoofer gain ???
 EQ2 LoudnessLow;
 EQ2 LoudnessHigh;
 struct {
     ubyte value[19] <bgcolor=cGray>;
-} byte_rise_3[7];
+} GALA[7];
 EQ2 UnknownFilter_1;
 EQ2 UnknownFilter_2;
 struct {
@@ -127,8 +138,8 @@ ubyte unknown_22 <bgcolor=cPurple>;
 struct {
     ubyte attackTime <bgcolor=cDkGreen>;
     ushort releaseTime <bgcolor=cGreen>;
-    byte treshold <bgcolor=cLtGreen>;
-    byte holdTime <bgcolor=cAqua>;
+    ubyte treshold <bgcolor=cLtGreen>;
+    ubyte holdTime <bgcolor=cAqua>;
 } Limiters[6];
 
 FSeek(FileSize() - 4);
@@ -162,29 +173,27 @@ for (i = 0; i < 5; i++) {
 Printf("===========================================================\n");
 Printf("Subwoofer\t\t\t  %7.2f\n", Subwoofer_maxGain / 15);
 
-printEQ2(LoudnessLow, "LOUDNESS LOW");
-printEQ2(LoudnessHigh, "LOUDNESS HIGH");
+printEQ2(LoudnessLow, "LOUDNESS LOW", false);
+printEQ2(LoudnessHigh, "LOUDNESS HIGH", false);
 
 Printf("\nGALA (SPEED-DEPENDENT VOLUME CONTROL)");
-Printf("\nLevel\t  Gain\n");
-Printf("============================================");
-Printf("============================================\n");
+Printf("\nLevel\t Gain\n");
+Printf("==========================================");
+Printf("==========================================");
+Printf("==========================================\n");
 for ( i = 0; i < 7; i++ ) {
     Printf("%i\t", i+1);
     for ( j = 0; j < 19; j++ ) {
-        Printf("%3g ",byte_rise_3[i].value[j]);
+        Printf("%5.2f ", calcAbsGain(GALA[i].value[j]));
     }
     Printf("\n");
 };
-Printf("============================================");
-Printf("============================================\n");
+Printf("==========================================");
+Printf("==========================================");
+Printf("==========================================\n");
 
-printEQ2(UnknownFilter_1, "UNKNOWN FILTER 1");
-printEQ2(UnknownFilter_2, "UNKNOWN FILTER 2");
-
-float calcGain (byte value) {
-    return value / 12.5;
-}
+printEQ2(UnknownFilter_1, "UNKNOWN FILTER 1", true);
+printEQ2(UnknownFilter_2, "UNKNOWN FILTER 2", true);
 
 Printf("\n\n");
 for (j = 0; j < 2; j++) {
