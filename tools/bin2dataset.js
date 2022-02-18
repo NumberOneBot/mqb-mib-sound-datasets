@@ -23,9 +23,8 @@ if (help) {
 Usage:
   bin2dataset [files...] [options]
 
-Packs one or several data blocks into dataset, using provided XML template.
-Names of the files should contain address of the block as last suffix
-before file extension.
+Packs one or several data blocks into dataset. Names of the files should contain
+address of the block as last suffix before file extension.
 
 OPTIONS
   --format=[hex|bin]  format of the input data, default value is 'bin'
