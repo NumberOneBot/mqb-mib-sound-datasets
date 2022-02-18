@@ -36,20 +36,20 @@ Usage:
   zdc2bin [file] [options]
 
 Dataset browser / extractor tool. Takes ZDC container and shows available
-datasets in it, using provided options to filter them.
+datasets inside it, using provided options to filter them.
 
 OPTIONS
   --list              show list of datasets matching filter rules
   --details           show full info about every dataset
-  --extract=[index]   use it in a combo with 'list' / 'details' option to
-                      extract on of the datasets in the printed output
+  --extract=[index]   use it in the combination with 'list' / 'details' option
+                      to extract one of the datasets in the printed output
   --zdc               use container name as prefix of the new files
   --format=[hex|bin]  format of the data extracted to files, default is 'bin'
 
 FILTERING
   --pr=[8RM]          show datasets with provided PR-code only
-  --addr=[3B00]       show datasets with provided address only, default
-                      is '0x003000'
+  --addr=[0x003B00]   show datasets with provided address only, could be
+                      shortened value like '3B00', default is '0x003000'
   --any               alias to addr=any
 `);
 	return;
