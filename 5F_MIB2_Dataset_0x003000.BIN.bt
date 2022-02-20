@@ -70,6 +70,10 @@ typedef struct {
     byte gain <bgcolor=cDkAqua>; // [-12.5 .. 12.5]
 } EQ3;
 
+float calcQuality (ubyte value) {
+    return (float) value / 10;
+}
+
 float calcGain (byte value) {
     return (float) value / 12.5;
 }
@@ -78,12 +82,16 @@ float calcAbsGain (ubyte value) {
     return (float) value / 12.5;
 }
 
+float calcMaxGain (ubyte value) {
+    return (float) value / 15;
+}
+
 void printEQ2(EQ2 &s, string name, int unknownFlag) {
     Printf("\n%s\nType\tQuality\tFrequency\n", name);
     Printf("==================================\n");
-    Printf("%s\t%7g\t %6gHz\n", 
+    Printf("%s\t%7.1f\t %6gHz\n", 
         getFilterType(s.type), 
-        s.quality / 5, 
+        calcQuality(s.quality), 
         s.frequency); 
     Printf("==================================\n");
     if (!unknownFlag) {
@@ -138,9 +146,9 @@ ubyte unknown_22 <bgcolor=cPurple>;
 struct {
     ubyte attackTime <bgcolor=cDkGreen>;
     ushort releaseTime <bgcolor=cGreen>;
-    ubyte treshold <bgcolor=cLtGreen>;
+    ubyte threshold <bgcolor=cLtGreen>;
     ubyte holdTime <bgcolor=cAqua>;
-} Limiters[6];
+} DRC[6];
 
 FSeek(FileSize() - 4);
 
@@ -163,15 +171,15 @@ Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
 Printf("\nTONE CONTROLS\nType\tQuality\tFrequency\t  MaxGain\tGainOffset\n");
 Printf("===========================================================\n");
 for (i = 0; i < 5; i++) {
-    Printf("%s\t%7g\t %6gHz\t  %7.2f\t%10.2f\n",
+    Printf("%s\t%7.1f\t %6gHz\t  %7.2f\t%10.2f\n",
         getFilterType(ToneControls[i].type), 
-        ToneControls[i].quality / 5, 
+        calcQuality(ToneControls[i].quality), 
         ToneControls[i].frequency, 
-        (float) ToneControls[i].maxGain / 15,
+        calcMaxGain(ToneControls[i].maxGain),
         ToneControls[i].gainOffset / 12);
 }
 Printf("===========================================================\n");
-Printf("Subwoofer\t\t\t  %7.2f\n", Subwoofer_maxGain / 15);
+Printf("Subwoofer\t\t\t  %7.2f\n", calcMaxGain(Subwoofer_maxGain));
 
 printEQ2(LoudnessLow, "LOUDNESS LOW", false);
 printEQ2(LoudnessHigh, "LOUDNESS HIGH", false);
@@ -208,59 +216,58 @@ for (j = 0; j < 2; j++) {
         Printf("------------------------------------------------\n");
         Printf("Type\tQuality\t Frequency\t       Gain\n");        
         Printf("================================================\n");
-        Printf("%s\t%7g\t  %6gHz\t      %5.2f\n", 
+        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
             getFilterType(CarEQ[k].Filter1.type), 
-            CarEQ[k].Filter1.quality / 5, 
+            calcQuality(CarEQ[k].Filter1.quality), 
             CarEQ[k].Filter1.frequency,
             calcGain(CarEQ[k].Filter1.gain)); 
-        Printf("%s\t%7g\t  %6gHz\t      %5.2f\n", 
+        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
             getFilterType(CarEQ[k].Filter2.type), 
-            CarEQ[k].Filter2.quality / 5, 
+            calcQuality(CarEQ[k].Filter2.quality), 
             CarEQ[k].Filter2.frequency,
             calcGain(CarEQ[k].Filter2.gain)); 
-        Printf("%s\t%7g\t  %6gHz\t      %5.2f\n", 
+        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
             getFilterType(CarEQ[k].Filter3.type), 
-            CarEQ[k].Filter3.quality / 5, 
+            calcQuality(CarEQ[k].Filter3.quality), 
             CarEQ[k].Filter3.frequency,
             calcGain(CarEQ[k].Filter3.gain)); 
-        Printf("%s\t%7g\t  %6gHz\t      %5.2f\n", 
+        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
             getFilterType(CarEQ[k].Filter4.type), 
-            CarEQ[k].Filter4.quality / 5, 
+            calcQuality(CarEQ[k].Filter4.quality), 
             CarEQ[k].Filter4.frequency,
             calcGain(CarEQ[k].Filter4.gain)); 
-        Printf("%s\t%7g\t  %6gHz\t      %5.2f\n", 
+        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
             getFilterType(CarEQ[k].Filter5.type), 
-            CarEQ[k].Filter5.quality / 5, 
+            calcQuality(CarEQ[k].Filter5.quality), 
             CarEQ[k].Filter5.frequency,
             calcGain(CarEQ[k].Filter5.gain)); 
-        Printf("%s\t%7g\t  %6gHz\t      %5.2f\n", 
+        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
             getFilterType(CarEQ[k].Filter6.type), 
-            CarEQ[k].Filter6.quality / 5, 
+            calcQuality(CarEQ[k].Filter6.quality), 
             CarEQ[k].Filter6.frequency,
             calcGain(CarEQ[k].Filter6.gain)); 
-        Printf("%s\t%7g\t  %6gHz\t      %5.2f\n", 
+        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
             getFilterType(CarEQ[k].Filter7.type), 
-            CarEQ[k].Filter7.quality / 5, 
+            calcQuality(CarEQ[k].Filter7.quality), 
             CarEQ[k].Filter7.frequency,
             calcGain(CarEQ[k].Filter7.gain)); 
         Printf("================================================\n\n");
     }
 }
 
-Printf("LIMITERS\n");
-Printf("Channel\tAttack\tRelease\tTreshold\t   Hold\n");
+Printf("DYNAMIC RANGE COMPRESSION\n");
+Printf("Channel\t Threshold\t   Attack\t    Hold\tRelease\n");
 Printf("========================================================\n");
 for (i = 0; i < 6; i++) {
-    Printf("%i\t  %4.1f\t   %4g\t     %3g\t   %4.1f\n", 
+    Printf("%i\t     %5.1f\t   %6.1f\t  %6.1f\t   %4g\n", 
         i+1,
-        Limiters[i].attackTime / 20, // [0.5 .. 20]
-        Limiters[i].releaseTime,     // [5 .. 2000]
-        Limiters[i].treshold / -24,   // [-24 ..  0]
-        Limiters[i].holdTime / 20    // [0.5 .. 20]
+        DRC[i].threshold / -20,         // [-20 .. 0 ]
+        (float) DRC[i].attackTime / 20, // [0.5 .. 20]
+        (float) DRC[i].holdTime / 20,   // [0.5 .. 20]
+        DRC[i].releaseTime              // [5 .. 2000]
     );
 }
 Printf("========================================================");
-
 
 local ushort file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init 
 Printf("\n\nFILE CHECKSUM: %.04X", file_checksum);  
