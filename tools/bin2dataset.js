@@ -84,24 +84,55 @@ const odisTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 </RESULT>
 </MESSAGE>`;
 
-const vcpTemplate = `<ZDC>
+const vcpTemplate = `<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE ZDC PUBLIC "ZDC020401.dtd"
+                     "ZDC020401.dtd">
+<?xml-stylesheet href="ZDC020401.xsl" type="text/xsl"?>
+<ZDC>
 <IDENT>
-<DATEINAME>ASAM_ODX</DATEINAME>
-<DATEIID>V09600047P6</DATEIID>
-<VERSION-TYP></VERSION-TYP>
-<VERSION-INHALT>0204</VERSION-INHALT>
-<LOGIN>20103</LOGIN>
-<ALFID>24</ALFID>
-<PRNRREF></PRNRREF>
-<DATUM></DATUM>
-<BESCHREIBUNG></BESCHREIBUNG>
+<DATEINAME>
+ASAM_ODX
+</DATEINAME>
+<DATEIID>
+<!--ZDC-->
+</DATEIID>
+<VERSION-TYP>
+020401
+</VERSION-TYP>
+<VERSION-INHALT>
+0049
+</VERSION-INHALT>
+<LOGIN>
+20103
+</LOGIN>
+<ALFID>
+24
+</ALFID>
+<PRNRREF>
+</PRNRREF>
+<DATUM>
+</DATUM>
+<BESCHREIBUNG>
+</BESCHREIBUNG>
 </IDENT>
+<VORSCHRIFT>
+<DIREKT>
+<DIAGN>
+<BUS>
+MOST-Infotainment
+</BUS>
+<ADR>
+5F
+</ADR>
+</DIAGN>
 <DATENBEREICHE>
 <!--PARAMETERS-->
 </DATENBEREICHE>
+</DIREKT>
+</VORSCHRIFT>
 </ZDC>`;
 
-const prettify = (value, length = 2) => value.toString(16).toUpperCase().padStart(length, '0');
+const prettify = (value, length = 2) => value.toString(16).padStart(length, '0');
 
 let parameters = '';
 let zdcName;
@@ -121,16 +152,25 @@ files.map((filename) => {
 			dataSize = '0x' + binaryData.length.toString(16),
 			parametersName = filename.slice(zdc ? filename.indexOf('.') + 1 : 0, filename.indexOf(address) - 1),
 			parametersVcpTemplate = `<DATENBEREICH>
-<DATEN-NAME>${zdcName}</DATEN-NAME>
-<DATEN-FORMAT-NAME>DFN_HEX</DATEN-FORMAT-NAME>
-<START-ADR>${address}</START-ADR>
-<GROESSE-DEKOMPRIMIERT>${dataSize}</GROESSE-DEKOMPRIMIERT>
+<DATEN-NAME>
+${parametersName}
+</DATEN-NAME>
+<DATEN-FORMAT-NAME>
+DFN_HEX
+</DATEN-FORMAT-NAME>
+<START-ADR>
+${address}
+</START-ADR>
+<GROESSE-DEKOMPRIMIERT>
+${dataSize}
+</GROESSE-DEKOMPRIMIERT>
 <DATEN>
 ${hexData}
 </DATEN>
-</DATENBEREICH>`,
+</DATENBEREICH>
+`,
 			parametersOdisTemplate = `
-<PARAMETER_DATA DIAGNOSTIC_ADDRESS="0x5F" START_ADDRESS="${address}" PR_IDX="" ZDC_NAME="${zdcName}" ZDC_VERSION="0001" LOGIN="20103" LOGIN_IND="" DSD_TYPE="1" SESSIONNAME="" FILENAME="${parametersName}">
+<PARAMETER_DATA DIAGNOSTIC_ADDRESS="0x5F" START_ADDRESS="${address}" PR_IDX="" ZDC_NAME="${zdcName}" ZDC_VERSION="0003" LOGIN="20103" LOGIN_IND="" DSD_TYPE="1" SESSIONNAME="" FILENAME="">
 ${hexData}
 </PARAMETER_DATA>`;
 		if (container === 'odis') {
@@ -144,7 +184,9 @@ ${hexData}
 	}
 });
 if (parameters) {
-	const data = (container === 'odis' ? odisTemplate : vcpTemplate).replace('<!--PARAMETERS-->', parameters),
+	const data = (container === 'odis' ? odisTemplate : vcpTemplate)
+			.replace('<!--PARAMETERS-->', parameters)
+			.replace('<!--ZDC-->', zdcName),
 		outName = (zdcName ? zdcName + '.' : '') + output + '.' + container.toUpperCase();
 	fs.writeFile(`${outName}.xml`, data, (err) => {
 		if (err) return console.log(err);
