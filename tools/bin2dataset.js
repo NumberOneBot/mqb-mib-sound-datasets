@@ -125,8 +125,7 @@ MOST-Infotainment
 5F
 </ADR>
 </DIAGN>
-<DATENBEREICHE>
-<!--PARAMETERS-->
+<DATENBEREICHE><!--PARAMETERS-->
 </DATENBEREICHE>
 </DIREKT>
 </VORSCHRIFT>
@@ -151,7 +150,8 @@ files.map((filename) => {
 			address = filename.split('.').slice(-2, -1)[0],
 			dataSize = '0x' + binaryData.length.toString(16),
 			parametersName = filename.slice(zdc ? filename.indexOf('.') + 1 : 0, filename.indexOf(address) - 1),
-			parametersVcpTemplate = `<DATENBEREICH>
+			parametersVcpTemplate = `
+<DATENBEREICH>
 <DATEN-NAME>
 ${parametersName}
 </DATEN-NAME>
@@ -167,8 +167,7 @@ ${dataSize}
 <DATEN>
 ${hexData}
 </DATEN>
-</DATENBEREICH>
-`,
+</DATENBEREICH>`,
 			parametersOdisTemplate = `
 <PARAMETER_DATA DIAGNOSTIC_ADDRESS="0x5F" START_ADDRESS="${address}" PR_IDX="" ZDC_NAME="${zdcName}" ZDC_VERSION="0003" LOGIN="20103" LOGIN_IND="" DSD_TYPE="1" SESSIONNAME="" FILENAME="">
 ${hexData}

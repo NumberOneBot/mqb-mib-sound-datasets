@@ -44,11 +44,23 @@ struct {
     Knob Subwoofer;
 } ToneControls;
 
+string getEffect(int type) {
+    switch(type) {
+        case 1: return "All";
+        case 2: return "Driver";
+        case 4: return "Movie";
+        case 8: return "Front";
+        case 16: return "Back";
+        default:   return "Unknown";      
+    }
+}
+
+
 ubyte Clicks <bgcolor=cDkAqua>;
 ubyte ToneBands <bgcolor=cAqua>;
 ubyte unknown_6 <bgcolor=cLtAqua>;
-ubyte effects_1 <bgcolor=cDkAqua>;
-ubyte effects_2 <bgcolor=cAqua>;
+ubyte FocusEffect1 <bgcolor=cDkAqua, read=getEffect>;
+ubyte FocusEffect2 <bgcolor=cAqua, read=getEffect>;
 struct {
     ubyte value[19] <bgcolor=cDkGray>;
 } UnknownGain;
@@ -75,6 +87,8 @@ Printf("Middle:\t [%3g .. %1g .. %1g ]\n",    ToneControls.Middle.min, ToneContr
 Printf("Lower:\t [%3g .. %1g .. %1g ]\n",     ToneControls.Lower.min, ToneControls.Lower.center, ToneControls.Lower.max);
 Printf("Bass:\t [%3g .. %1g .. %1g ]\n",      ToneControls.Bass.min, ToneControls.Bass.center, ToneControls.Bass.max);
 Printf("Subwoofer:\t [%3g .. %1g .. %1g ]\n", ToneControls.Subwoofer.min, ToneControls.Subwoofer.center, ToneControls.Subwoofer.max);
+
+Printf("\nFocusing:\t [ %s\t> ]\n\t [ %s\t  ]\n", getEffect(FocusEffect1), getEffect(FocusEffect2));
 
 Printf("\nUNKNOWN GAIN\n");
 for (j = 0; j < 19; j++) {
