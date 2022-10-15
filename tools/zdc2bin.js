@@ -15,12 +15,12 @@ const {
 	pr = false, // filter pr codes
 	any = false,
 	extract = false, // extract some dataset
-	help = false,
+	help = false
 } = argv;
 
 let {
 	list = false, // do not generate binary files, just print names
-	addr = '3000', // default address, 'any' dumps them all
+	addr = '3000' // default address, 'any' dumps them all
 } = argv;
 
 if (any) {
@@ -60,17 +60,38 @@ if (!argv.addr && addr !== 'any') {
 }
 fs.readFile(filename, 'utf8', (err, data) => {
 	if (err) return console.log(err);
-	if (data.indexOf('<DATENBEREICH>') === -1) return console.log('File provided is not a ZDC container');
+	const odisZdc = data.indexOf('<DATENBEREICH>') !== -1,
+		vcpZdc = data.indexOf('<DATABLOCKS>') !== -1;
+	if (!odisZdc && !vcpZdc) return console.log('File provided is not a ZDC container');
 
-	const zdcName = [...data.matchAll(/<DATEIID>(.*?)<\/DATEIID>/gims)][0][1] || '';
-	const datasets = [
-		...data.matchAll(
-			/<DATENBEREICH>.*?<DATEN-NAME>(.*?)<\/DATEN-NAME>.*?<START-ADR>(.*?)<\/START-ADR>.*?<DATEN>(.*?)<\/DATEN>.*?<\/DATENBEREICH>/gims
-		),
-	].filter((val) =>
-		String(addr).toUpperCase() === 'ANY' ? true : val[2].indexOf(String(addr).toUpperCase()) !== -1
+	const zdcName =
+		[...data.matchAll(/<DATEIID>(.*?)<\/DATEIID>/gims)][0]?.[1] ||
+		filename.slice(0, filename.lastIndexOf('.'));
+	let info = [
+		...data.matchAll(/<TEGUE>.*?<PRNR>(.*?)<\/PRNR>.*?<PRBEZ>(.*?)<\/PRBEZ>.*?<\/TEGUE>/gims)
+	];
+	let parsedData = [];
+	if (odisZdc) {
+		// German XML notation
+		parsedData = [
+			...data.matchAll(
+				/<DATENBEREICH>.*?<DATEN-NAME>(.*?)<\/DATEN-NAME>.*?<START-ADR>(.*?)<\/START-ADR>.*?<DATEN>(.*?)<\/DATEN>.*?<\/DATENBEREICH>/gims
+			)
+		];
+	} else {
+		// vcpZdc
+		// English XML notation
+		parsedData = [
+			...data.matchAll(
+				/<DATABLOCK>.*?<DATABLOCKNAME>(.*?)<\/DATABLOCKNAME>.*?<UPLOADADDR>(.*?)<\/UPLOADADDR>.*?<BYTEDATA>(.*?)<\/BYTEDATA>.*?<\/DATABLOCK>/gims
+			)
+		];
+	}
+	const datasets = parsedData.filter((val) =>
+		String(addr).toUpperCase() === 'ANY'
+			? true
+			: val[2].indexOf(String(addr).toUpperCase()) !== -1
 	);
-	let info = [...data.matchAll(/<TEGUE>.*?<PRNR>(.*?)<\/PRNR>.*?<PRBEZ>(.*?)<\/PRBEZ>.*?<\/TEGUE>/gims)];
 
 	let filteredData = [];
 	datasets.map((val) => {
@@ -104,7 +125,10 @@ fs.readFile(filename, 'utf8', (err, data) => {
 						clc.magenta(
 							String(val[1])
 								.padEnd(20, ' ')
-								.replace(String(pr).toUpperCase(), clc.inverse(String(pr).toUpperCase())) +
+								.replace(
+									String(pr).toUpperCase(),
+									clc.inverse(String(pr).toUpperCase())
+								) +
 								'   ' +
 								clc.cyan(
 									String(val[2]).replace(
