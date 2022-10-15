@@ -12,11 +12,11 @@ if (!argv._.length) {
 
 const {
 	_: files,
-	format = 'bin', // not used
 	zdc = true, // use ZDC prefixes
 	caret = 16, // add CR every N bytes
 	output = 'DATASET', // default name for output
 	container = 'odis',
+	crc16 = 'yes',
 	help = false,
 } = argv;
 
@@ -29,10 +29,10 @@ Packs one or several data blocks into dataset. Names of the files should contain
 address of the block as last suffix before file extension.
 
 OPTIONS
-  --format=[hex|bin]     format of the input data, default is 'bin'
   --container=[odis|vcp] format of the resulting container, default is 'odis'
   --zdc                  use file name prefix as ZDC container name
   --caret=[N]            add CRLF symbol every N bytes, default is 16
+  --crc16=[yes|no]       update CRC16 at the end of the dataset, default is 'yes'
   --output=[file]        use it as output dataset file name, default is 'DATASET'
 `);
 	return;
@@ -90,40 +90,18 @@ const vcpTemplate = `<?xml version="1.0" encoding="ISO-8859-1"?>
 <?xml-stylesheet href="ZDC020401.xsl" type="text/xsl"?>
 <ZDC>
 <IDENT>
-<DATEINAME>
-ASAM_ODX
-</DATEINAME>
-<DATEIID>
-<!--ZDC-->
-</DATEIID>
-<VERSION-TYP>
-020401
-</VERSION-TYP>
-<VERSION-INHALT>
-0049
-</VERSION-INHALT>
-<LOGIN>
-20103
-</LOGIN>
-<ALFID>
-24
-</ALFID>
-<PRNRREF>
-</PRNRREF>
-<DATUM>
-</DATUM>
-<BESCHREIBUNG>
-</BESCHREIBUNG>
+<DATEINAME>ASAM_ODX</DATEINAME>
+<DATEIID><!--ZDC--></DATEIID>
+<VERSION-TYP>020401</VERSION-TYP>
+<VERSION-INHALT>0049</VERSION-INHALT>
+<LOGIN>20103</LOGIN>
+<ALFID>24</ALFID>
 </IDENT>
 <VORSCHRIFT>
 <DIREKT>
 <DIAGN>
-<BUS>
-MOST-Infotainment
-</BUS>
-<ADR>
-5F
-</ADR>
+<BUS>MOST-Infotainment</BUS>
+<ADR>5F</ADR>
 </DIAGN>
 <DATENBEREICHE><!--PARAMETERS-->
 </DATENBEREICHE>
@@ -144,7 +122,9 @@ files.map((filename) => {
 			crcData = Uint8Array.from([...binaryData].slice(0, -2)),
 			crc = prettify(crc16Calculator(crcData), 4);
 
-		hexArray.splice(-2, 2, '0x' + crc.substr(0, 2), '0x' + crc.substr(2, 4));
+		if (crc16 === 'yes') {
+			hexArray.splice(-2, 2, '0x' + crc.substr(0, 2), '0x' + crc.substr(2, 4));
+		}
 
 		const hexData = hexArray.join(',').replace(new RegExp('(.{' + caret * 5 + '})', 'g'), '$1\n'),
 			address = filename.split('.').slice(-2, -1)[0],
@@ -152,18 +132,10 @@ files.map((filename) => {
 			parametersName = filename.slice(zdc ? filename.indexOf('.') + 1 : 0, filename.indexOf(address) - 1),
 			parametersVcpTemplate = `
 <DATENBEREICH>
-<DATEN-NAME>
-${parametersName}
-</DATEN-NAME>
-<DATEN-FORMAT-NAME>
-DFN_HEX
-</DATEN-FORMAT-NAME>
-<START-ADR>
-${address}
-</START-ADR>
-<GROESSE-DEKOMPRIMIERT>
-${dataSize}
-</GROESSE-DEKOMPRIMIERT>
+<DATEN-NAME>${parametersName}</DATEN-NAME>
+<DATEN-FORMAT-NAME>DFN_HEX</DATEN-FORMAT-NAME>
+<START-ADR>${address}</START-ADR>
+<GROESSE-DEKOMPRIMIERT>${dataSize}</GROESSE-DEKOMPRIMIERT>
 <DATEN>
 ${hexData}
 </DATEN>
