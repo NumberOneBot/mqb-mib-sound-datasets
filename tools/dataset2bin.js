@@ -10,7 +10,7 @@ if (!argv._.length) {
 const {
 	_: [filename],
 	format = 'bin',
-	help = false,
+	help = false
 } = argv;
 
 if (help) {
@@ -30,7 +30,9 @@ fs.readFile(filename, 'utf8', (err, data) => {
 	if (err) return console.log(err);
 	// <PARAMETER_DATA DIAGNOSTIC_ADDRESS="0x5F" START_ADDRESS="0x000240" PR_IDX="" ZDC_NAME="5G0CV1v____" ZDC_VERSION="0001" LOGIN="20103" LOGIN_IND="" DSD_TYPE="1" SESSIONNAME="" FILENAME="">
 	const datasets = [
-		...data.matchAll(/<PARAMETER_DATA.*?START_ADDRESS="(\S+)".*?ZDC_NAME="(\S*)".*?>(.*?)<\/PARAMETER_DATA>/gims),
+		...data.matchAll(
+			/<PARAMETER_DATA.*?START_ADDRESS="(\S+)".*?ZDC_NAME="(\S*)".*?>(.*?)<\/PARAMETER_DATA>/gims
+		)
 	];
 	const addr = datasets.map((val) => val[1]),
 		zdcName = datasets[0][2] || '',

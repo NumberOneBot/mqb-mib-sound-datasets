@@ -17,7 +17,7 @@ const {
 	output = 'DATASET', // default name for output
 	container = 'odis',
 	crc16 = 'yes',
-	help = false,
+	help = false
 } = argv;
 
 if (help) {
@@ -126,10 +126,15 @@ files.map((filename) => {
 			hexArray.splice(-2, 2, '0x' + crc.substr(0, 2), '0x' + crc.substr(2, 4));
 		}
 
-		const hexData = hexArray.join(',').replace(new RegExp('(.{' + caret * 5 + '})', 'g'), '$1\n'),
+		const hexData = hexArray
+				.join(',')
+				.replace(new RegExp('(.{' + caret * 5 + '})', 'g'), '$1\n'),
 			address = filename.split('.').slice(-2, -1)[0],
 			dataSize = '0x' + binaryData.length.toString(16),
-			parametersName = filename.slice(zdc ? filename.indexOf('.') + 1 : 0, filename.indexOf(address) - 1),
+			parametersName = filename.slice(
+				zdc ? filename.indexOf('.') + 1 : 0,
+				filename.indexOf(address) - 1
+			),
 			parametersVcpTemplate = `
 <DATENBEREICH>
 <DATEN-NAME>${parametersName}</DATEN-NAME>

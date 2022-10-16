@@ -61,7 +61,7 @@ if (!argv.addr && addr !== 'any') {
 fs.readFile(filename, 'utf8', (err, data) => {
 	if (err) return console.log(err);
 	const odisZdc = data.indexOf('<DATENBEREICH>') !== -1,
-		vcpZdc = data.indexOf('<DATABLOCKS>') !== -1;
+		vcpZdc = data.indexOf('<DATABLOCK>') !== -1;
 	if (!odisZdc && !vcpZdc) return console.log('File provided is not a ZDC container');
 
 	const zdcName =
