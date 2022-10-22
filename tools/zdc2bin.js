@@ -12,23 +12,16 @@ const {
 	format = 'bin',
 	zdc = true, // use ZDC prefixes for file names
 	details = false, // show full info about every dataset found
-	pr = false, // filter pr codes
-	any = false,
+	list = details ? true : false, // do not generate binary files, just print names
+	pr = false, // filter PR codes
+	addr = 'any', // default address, 'any' dumps them all
 	extract = false, // extract some dataset
 	help = false
 } = argv;
 
-let {
-	list = false, // do not generate binary files, just print names
-	addr = '3000' // default address, 'any' dumps them all
-} = argv;
-
-if (any) {
-	addr = 'any';
-}
-if (details) {
-	list = true;
-}
+// helpers
+const PR = String(pr).toUpperCase(),
+	ADDR = String(addr).toUpperCase();
 
 if (help) {
 	console.log(`
@@ -50,23 +43,19 @@ FILTERING
   --pr=[8RM]          show datasets with provided PR-code only
   --addr=[0x003B00]   show datasets with provided address only, could be
                       shortened value like '3B00', default is '0x003000'
-  --any               alias to addr=any
 `);
 	return;
 }
 
-if (!argv.addr && addr !== 'any') {
-	console.log('\n' + clc.green(`Default address 0x00${addr} used`));
-}
 fs.readFile(filename, 'utf8', (err, data) => {
 	if (err) return console.log(err);
 	const odisZdc = data.indexOf('<DATENBEREICH>') !== -1,
 		vcpZdc = data.indexOf('<DATABLOCK>') !== -1;
 	if (!odisZdc && !vcpZdc) return console.log('File provided is not a ZDC container');
 
-	const zdcName =
-		[...data.matchAll(/<DATEIID>(.*?)<\/DATEIID>/gims)][0]?.[1] ||
-		filename.slice(0, filename.lastIndexOf('.'));
+	const containerName =
+		[...data.matchAll(/<DATEIID>(.*?)<\/DATEIID>/gims)][0]?.[1] || // ZDC
+		filename.slice(0, filename.lastIndexOf('.')); // FILE
 	let info = [
 		...data.matchAll(/<TEGUE>.*?<PRNR>(.*?)<\/PRNR>.*?<PRBEZ>(.*?)<\/PRBEZ>.*?<\/TEGUE>/gims)
 	];
@@ -87,70 +76,50 @@ fs.readFile(filename, 'utf8', (err, data) => {
 			)
 		];
 	}
-	const datasets = parsedData.filter((val) =>
-		String(addr).toUpperCase() === 'ANY'
-			? true
-			: val[2].indexOf(String(addr).toUpperCase()) !== -1
+	const datasets = parsedData.filter(([, , addr]) =>
+		ADDR === 'ANY' ? true : addr.indexOf(ADDR) !== -1
 	);
 
 	let filteredData = [];
-	datasets.map((val) => {
-		const profileByName = info.filter((val2) => val2[0].indexOf(val[1]) !== -1);
-		let foundFlag = false,
-			foundIndex = [];
+	datasets.map(([, name, addr, hex]) => {
+		const profileByName = info.filter(([val]) => val.indexOf(name) !== -1);
+		let foundFlag = false;
 		if (pr) {
-			profileByName.map((pval, index) => {
+			profileByName.map(([, prCodes, modelName]) => {
 				if (
-					val[1].indexOf(String(pr).toUpperCase()) !== -1 ||
-					pval[1].indexOf(String(pr).toUpperCase()) !== -1 ||
-					pval[2].indexOf(String(pr).toUpperCase()) !== -1
+					// search for PR code in several places
+					[name, prCodes, modelName].reduce(
+						(prev, cur) => cur.indexOf(PR) !== -1 || prev,
+						false
+					)
 				) {
 					foundFlag = true;
-					foundIndex.push(index);
 				}
 			});
-			if (!foundFlag) {
-				return;
-			}
+			if (!foundFlag) return;
 		}
-		filteredData.push(val);
+		filteredData.push({ name, addr, hex });
 		if (list) {
-			console.log(clc.yellow(val[2]) + ' = ' + clc.green(val[1]));
+			console.log(clc.yellow(addr) + ' = ' + clc.green(name));
 			if (details) {
-				profileByName.map((val, index) => {
-					if (pr && !foundFlag) {
-						return;
-					}
+				profileByName.map(([, prCodes, modelName]) => {
+					if (pr && !foundFlag) return;
 					console.log(
-						clc.magenta(
-							String(val[1])
-								.padEnd(20, ' ')
-								.replace(
-									String(pr).toUpperCase(),
-									clc.inverse(String(pr).toUpperCase())
-								) +
-								'   ' +
-								clc.cyan(
-									String(val[2]).replace(
-										String(pr).toUpperCase(),
-										clc.inverse(String(pr).toUpperCase())
-									)
-								)
-						)
+						clc.magenta(String(prCodes).padEnd(20, ' ').replace(PR, clc.inverse(PR))) +
+							'   ' +
+							clc.cyan(String(modelName).replace(PR, clc.inverse(PR)))
 					);
 				});
 			}
 		}
 	});
-	console.log(' ');
-	if (list && !extract) {
-		return;
-	}
+	console.log(' '); // new line
+	if (list && !extract) return;
 
-	filteredData.map((val, index) => {
-		const hex = val[3].replaceAll(/\s|\n|0x|,/gim, ''),
-			bin = Uint8Array.from(hex.match(/(..)/g).map((val) => parseInt(val, 16))),
-			filename = (zdc ? zdcName + '.' : '') + `${val[1]}.${val[2]}.${format}`;
+	filteredData.map(({ name, addr, hex }, index) => {
+		const hexPairs = hex.replaceAll(/\s|\n|0x|,/gim, ''), // cleanup
+			bin = Uint8Array.from(hexPairs.match(/(..)/g).map((val) => parseInt(val, 16))),
+			filename = (zdc ? containerName + '.' : '') + `${name}.${addr}.${format}`;
 
 		if ((!list && !extract) || (list && extract === index + 1)) {
 			fs.writeFile(filename, bin, (err) => {
