@@ -1,9 +1,9 @@
 //------------------------------------------------
-//--- 010 Editor v12.0 Binary Template
+//--- 010 Editor v13.0 Binary Template
 //
 //      File: 0x003000.BIN
 //   Authors: Alex Strelets
-//   Version: 0.3
+//   Version: 0.5
 //   Purpose: Parse the contents of the MIB2 Sound Channels and Effects
 //  Category: 
 // File Mask: 
@@ -11,6 +11,8 @@
 //   History: 0.1 - Initial version
 //            0.2 - Limiters added
 //            0.3 - MIB1 vs MIB2 data sync
+//            0.5 - 'Sound Effects' table optimizations, 
+//                  renaming, refactoring, cleanup
 //------------------------------------------------
 
 BigEndian();
@@ -63,11 +65,12 @@ typedef struct {
     ubyte gain[19] <bgcolor=cDkAqua>;
 } EQ2;
 
-typedef struct {
+typedef struct (int length) {
     ubyte type <bgcolor=cAqua, read=getFilterType>;
     ubyte quality <bgcolor=cLtGreen>;
     ushort frequency <bgcolor=cGreen>;
     byte gain <bgcolor=cDkAqua>; // [-12.5 .. 12.5]
+    ubyte coefficients[length] <bgcolor=cDkGray>;
 } EQ3;
 
 float calcQuality (ubyte value) {
@@ -87,9 +90,9 @@ float calcMaxGain (ubyte value) {
 }
 
 void printEQ2(EQ2 &s, string name, int unknownFlag) {
-    Printf("\n%s\nType\tQuality\tFrequency\n", name);
+    Printf("\n%s\nType  \tQ Factor\tFrequency\n", name);
     Printf("==================================\n");
-    Printf("%s\t%7.1f\t %6gHz\n", 
+    Printf("%-13s%7.1f\t %6gHz\n", 
         getFilterType(s.type), 
         calcQuality(s.quality), 
         s.frequency); 
@@ -101,10 +104,10 @@ void printEQ2(EQ2 &s, string name, int unknownFlag) {
         }
         Printf("\n");
     }
-        Printf("Gain:\t");
-        for (i = 0; i < 19; i++) {
-            Printf("%5.2f ", calcAbsGain(s.gain[i])); 
-        }
+    Printf("Gain:  \t");
+    for (i = 0; i < 19; i++) {
+        Printf("%5.2f ", calcAbsGain(s.gain[i])); 
+    }
     Printf("\n");
 }
 
@@ -118,30 +121,26 @@ struct {
 } GALA[7];
 EQ2 UnknownFilter_1;
 EQ2 UnknownFilter_2;
-struct {
-    EQ3 Filter1;
-    ubyte Filter1_coefficients[16] <bgcolor=cDkGray>;
-    EQ3 Filter2;
-    ubyte Filter2_coefficients[16] <bgcolor=cDkGray>;
-    EQ3 Filter3;
-    ubyte Filter3_coefficients[16] <bgcolor=cDkGray>;
-    EQ3 Filter4;
-    EQ3 Filter5;
-    EQ3 Filter6;
-    EQ3 Filter7;
+struct CarEQ {
+    EQ3 Filter1(16);
+    EQ3 Filter2(16);
+    EQ3 Filter3(16);
+    EQ3 Filter4(0);
+    EQ3 Filter5(0);
+    EQ3 Filter6(0);
+    EQ3 Filter7(0);
     byte Gain <bgcolor=cLtYellow>;
     ubyte Delay <bgcolor=cYellow>;
     ubyte Phase <bgcolor=cDkYellow>;
-} CarEQ[12];
+};
 
-
-
-FSeek(0x50D);
+CarEQ Profile_1[6] <optimize=true>;
+CarEQ Profile_2[6] <optimize=true>;
 
 // one of those bytes could be "Limiter THDmax" [0 .. 30]
-ubyte unknown_20 <bgcolor=cPurple>;
-ubyte unknown_21 <bgcolor=cPurple>;
-ubyte unknown_22 <bgcolor=cPurple>;
+struct {
+    byte unknown[7] <bgcolor=cPurple>;
+} Warmth; // ??? potentially
 
 struct {
     ubyte attackTime <bgcolor=cDkGreen>;
@@ -168,10 +167,10 @@ local int k = 0;
 
 Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
 
-Printf("\nTONE CONTROLS\nType\tQuality\tFrequency\t  MaxGain\tGainOffset\n");
+Printf("\nTONE CONTROLS\nType   \tQ Factor\tFrequency\t  MaxGain\tGainOffset\n");
 Printf("===========================================================\n");
 for (i = 0; i < 5; i++) {
-    Printf("%s\t%7.1f\t %6gHz\t  %7.2f\t%10.2f\n",
+    Printf("%-13s%7.1f\t %6gHz\t  %7.2f\t%10.2f\n",
         getFilterType(ToneControls[i].type), 
         calcQuality(ToneControls[i].quality), 
         ToneControls[i].frequency, 
@@ -179,18 +178,18 @@ for (i = 0; i < 5; i++) {
         ToneControls[i].gainOffset / 12);
 }
 Printf("===========================================================\n");
-Printf("Subwoofer\t\t\t  %7.2f\n", calcMaxGain(Subwoofer_maxGain));
+Printf("Subwoofer               \t\t  %7.2f\n", calcMaxGain(Subwoofer_maxGain));
 
 printEQ2(LoudnessLow, "LOUDNESS LOW", false);
 printEQ2(LoudnessHigh, "LOUDNESS HIGH", false);
 
 Printf("\nGALA (SPEED-DEPENDENT VOLUME CONTROL)");
-Printf("\nLevel\t Gain\n");
+Printf("\nLevel  \t Gain\n");
 Printf("==========================================");
 Printf("==========================================");
 Printf("==========================================\n");
 for ( i = 0; i < 7; i++ ) {
-    Printf("%i\t", i+1);
+    Printf("%-7i\t", i+1);
     for ( j = 0; j < 19; j++ ) {
         Printf("%5.2f ", calcAbsGain(GALA[i].value[j]));
     }
@@ -203,63 +202,96 @@ Printf("==========================================\n");
 printEQ2(UnknownFilter_1, "UNKNOWN FILTER 1", true);
 printEQ2(UnknownFilter_2, "UNKNOWN FILTER 2", true);
 
-Printf("\n\n");
-for (j = 0; j < 2; j++) {
-    Printf("[ CarEQ%i ]\n\n", j+1);
-    for (i = 0; i < 6; i++) {
-        k = j * 6 + i;
-        Printf("CHANNEL %i [ Gain: %5.2f Delay: %2gms Phase: %3g°]\n", 
-            i+1, 
-            calcGain(CarEQ[k].Gain), 
-            CarEQ[k].Delay, 
-            CarEQ[k].Phase > 0 ? 180 : 0);
-        Printf("------------------------------------------------\n");
-        Printf("Type\tQuality\t Frequency\t       Gain\n");        
-        Printf("================================================\n");
-        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
-            getFilterType(CarEQ[k].Filter1.type), 
-            calcQuality(CarEQ[k].Filter1.quality), 
-            CarEQ[k].Filter1.frequency,
-            calcGain(CarEQ[k].Filter1.gain)); 
-        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
-            getFilterType(CarEQ[k].Filter2.type), 
-            calcQuality(CarEQ[k].Filter2.quality), 
-            CarEQ[k].Filter2.frequency,
-            calcGain(CarEQ[k].Filter2.gain)); 
-        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
-            getFilterType(CarEQ[k].Filter3.type), 
-            calcQuality(CarEQ[k].Filter3.quality), 
-            CarEQ[k].Filter3.frequency,
-            calcGain(CarEQ[k].Filter3.gain)); 
-        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
-            getFilterType(CarEQ[k].Filter4.type), 
-            calcQuality(CarEQ[k].Filter4.quality), 
-            CarEQ[k].Filter4.frequency,
-            calcGain(CarEQ[k].Filter4.gain)); 
-        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
-            getFilterType(CarEQ[k].Filter5.type), 
-            calcQuality(CarEQ[k].Filter5.quality), 
-            CarEQ[k].Filter5.frequency,
-            calcGain(CarEQ[k].Filter5.gain)); 
-        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
-            getFilterType(CarEQ[k].Filter6.type), 
-            calcQuality(CarEQ[k].Filter6.quality), 
-            CarEQ[k].Filter6.frequency,
-            calcGain(CarEQ[k].Filter6.gain)); 
-        Printf("%s\t  %5.1f\t  %6gHz\t      %5.2f\n", 
-            getFilterType(CarEQ[k].Filter7.type), 
-            calcQuality(CarEQ[k].Filter7.quality), 
-            CarEQ[k].Filter7.frequency,
-            calcGain(CarEQ[k].Filter7.gain)); 
-        Printf("================================================\n\n");
+Printf("\n");
+
+local string spacer = "\t\t\t";
+
+void printEQFilter(EQ3 &filter, int index) {
+    local string str = (index > 1 ? "\n" : spacer);
+    Printf("%-13s  %5.1f\t  %6gHz\t      %5.2f %s", 
+        getFilterType(filter.type), 
+        calcQuality(filter.quality), 
+        filter.frequency,
+        calcGain(filter.gain),
+        str); 
+}
+
+void printProfileName (int index) {
+    Printf("[ CarEQ SoundProfile #%i ]                       %s", index, index > 1 ? "\n\n": spacer);
+}
+
+void printChannelHeader(CarEQ eq[], int index, int profileIndex) {
+    local string str = (profileIndex > 1 ? "\n" : spacer);
+    local string channelName;
+
+    switch (index) {
+        case 0: channelName = "REAR_R_CH "; break;
+        case 1: channelName = "FRONT_R_CH"; break;
+        case 2: channelName = "FRONT_L_CH"; break;
+        case 3: channelName = "REAR_L_CH "; break;
+        case 4: channelName = "SUBWOOFER "; break;
+        case 5: channelName = "CENTER_CH "; break;
+        default: 
+            channelName = Str("CHANNEL_%i ", index+1);
     }
+    Printf("%s [ Gain: %-5.2f Delay: %.1fms Phase: %1g°]%s", 
+        channelName, 
+        calcGain(eq[index].Gain), 
+        (float) eq[index].Delay / 10, 
+        eq[index].Phase > 0 ? 180 : 0,
+        str);
+}
+
+void printLines() {
+    local string str = "------------------------------------------------%s";
+    Printf(str, spacer);
+    Printf(str, "\n");
+}
+
+void printDoubleLines() {
+    local string str = "================================================%s";
+    Printf(str, spacer);
+    Printf(str, "\n");
+}
+
+void printFiltersHeader() {
+    local string str = "Type  \tQ Factor\t Frequency\t       Gain %s";
+    Printf(str, spacer);        
+    Printf(str, "\n");        
+
+}
+
+printProfileName(1);
+printProfileName(2);
+for (i = 0; i < 6; i++) {
+    printChannelHeader(Profile_1, i, 1);
+    printChannelHeader(Profile_2, i, 2);
+    printLines();
+    printFiltersHeader();
+    printDoubleLines();
+    printEQFilter(Profile_1[i].Filter1, 1);
+    printEQFilter(Profile_2[i].Filter1, 2);
+    printEQFilter(Profile_1[i].Filter2, 1);
+    printEQFilter(Profile_2[i].Filter2, 2);
+    printEQFilter(Profile_1[i].Filter3, 1);
+    printEQFilter(Profile_2[i].Filter3, 2);
+    printEQFilter(Profile_1[i].Filter4, 1);
+    printEQFilter(Profile_2[i].Filter4, 2);
+    printEQFilter(Profile_1[i].Filter5, 1);
+    printEQFilter(Profile_2[i].Filter5, 2);
+    printEQFilter(Profile_1[i].Filter6, 1);
+    printEQFilter(Profile_2[i].Filter6, 2);
+    printEQFilter(Profile_1[i].Filter7, 1);
+    printEQFilter(Profile_2[i].Filter7, 2);
+    printDoubleLines();
+    Printf("\n");
 }
 
 Printf("DYNAMIC RANGE COMPRESSION\n");
-Printf("Channel\t Threshold\t   Attack\t    Hold\tRelease\n");
-Printf("========================================================\n");
+Printf("Channel  Threshold   Attack     Hold    Release\n");
+Printf("================================================\n");
 for (i = 0; i < 6; i++) {
-    Printf("%i\t     %5.1f\t   %6.1f\t  %6.1f\t   %4g\n", 
+    Printf("%-8i     %5.1f   %6.1f   %6.1f     %4gms\n", 
         i+1,
         DRC[i].threshold / -20,         // [-20 .. 0 ]
         (float) DRC[i].attackTime / 20, // [0.5 .. 20]
@@ -267,7 +299,7 @@ for (i = 0; i < 6; i++) {
         DRC[i].releaseTime              // [5 .. 2000]
     );
 }
-Printf("========================================================");
+Printf("================================================");
 
 local ushort file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init 
 Printf("\n\nFILE CHECKSUM: %.04X", file_checksum);  
