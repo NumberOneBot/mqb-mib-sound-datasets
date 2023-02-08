@@ -236,11 +236,11 @@ void printChannelHeader(CarEQ eq[], int index, int profileIndex) {
         default: 
             channelName = Str("CHANNEL_%i ", index+1);
     }
-    Printf("%s [ Gain: %-5.2f Delay: %.1fms Phase: %1g°]%s", 
+    Printf("%s [ Gain: %-5.2f Delay: %.1fms Phase: %s ]%s", 
         channelName, 
         calcGain(eq[index].Gain), 
         (float) eq[index].Delay / 10, 
-        eq[index].Phase > 0 ? 180 : 0,
+        (char) eq[index].Phase > 0 ? 'R' : '0',
         str);
 }
 
