@@ -90,7 +90,7 @@ float calcMaxGain (ubyte value) {
 }
 
 void printEQ2(EQ2 &s, string name, int unknownFlag) {
-    Printf("\n%s\nType  \tQ Factor\tFrequency\n", name);
+    Printf("\n%s\nType    \tQ Factor\tFrequency\n", name);
     Printf("==================================\n");
     Printf("%-13s%7.1f\t %6gHz\n", 
         getFilterType(s.type), 
@@ -167,7 +167,7 @@ local int k = 0;
 
 Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
 
-Printf("\nTONE CONTROLS\nType   \tQ Factor\tFrequency\t  MaxGain\tGainOffset\n");
+Printf("\nTONE CONTROLS\nType     \tQ Factor\tFrequency\t  MaxGain\tGainOffset\n");
 Printf("===========================================================\n");
 for (i = 0; i < 5; i++) {
     Printf("%-13s%7.1f\t %6gHz\t  %7.2f\t%10.2f\n",
@@ -178,7 +178,7 @@ for (i = 0; i < 5; i++) {
         ToneControls[i].gainOffset / 12);
 }
 Printf("===========================================================\n");
-Printf("Subwoofer               \t\t  %7.2f\n", calcMaxGain(Subwoofer_maxGain));
+Printf("Subwoofer                        \t  %7.2f\n", calcMaxGain(Subwoofer_maxGain));
 
 printEQ2(LoudnessLow, "LOUDNESS LOW", false);
 printEQ2(LoudnessHigh, "LOUDNESS HIGH", false);
@@ -255,7 +255,7 @@ void printDoubleLines() {
 }
 
 void printFiltersHeader() {
-    local string str = "Type  \tQ Factor\t Frequency\t       Gain %s";
+    local string str = "Type    \tQ Factor\t Frequency\t       Gain %s";
     Printf(str, spacer);        
     Printf(str, "\n");        
 
