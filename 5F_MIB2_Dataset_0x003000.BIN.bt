@@ -13,6 +13,7 @@
 //            0.3 - MIB1 vs MIB2 data sync
 //            0.5 - 'Sound Effects' table optimizations, 
 //                  renaming, refactoring, cleanup
+//            0.5.1 -  THD max property found
 //------------------------------------------------
 
 BigEndian();
@@ -139,8 +140,9 @@ CarEQ Profile_2[6] <optimize=true>;
 
 // one of those bytes could be "Limiter THDmax" [0 .. 30]
 struct {
-    byte unknown[7] <bgcolor=cPurple>;
-} Warmth; // ??? potentially
+    byte unknown[6] <bgcolor=cPurple>;
+    byte THDmax <bgcolor=cBlue>;
+} Limiters; // Warmth ??? potentially
 
 struct {
     ubyte attackTime <bgcolor=cDkGreen>;
@@ -286,6 +288,15 @@ for (i = 0; i < 6; i++) {
     printDoubleLines();
     Printf("\n");
 }
+
+Printf("LIMITERS\n");
+Printf("\t\t\t      THD\n");
+Printf("----------------------------------------------\n");
+for (i = 0; i < 6; i++) {
+    Printf("%3i    ", Limiters.unknown[i]);
+}
+Printf("%3i", Limiters.THDmax);
+Printf("\n\n");
 
 Printf("DYNAMIC RANGE COMPRESSION\n");
 Printf("Channel  Threshold   Attack     Hold    Release\n");
