@@ -98,13 +98,13 @@ void printEQ2(EQ2 &s, string name, int unknownFlag) {
         s.frequency); 
     Printf("==================================\n");
     if (!unknownFlag) {
-        Printf("Volume:\t");
+        Printf("Volume: \t");
         for (i = 0; i < 19; i++) {
             Printf("%5g ", 18 - i);
         }
         Printf("\n");
     }
-    Printf("Gain:  \t");
+    Printf("Gain:   \t");
     for (i = 0; i < 19; i++) {
         Printf("%5.2f ", calcAbsGain(s.gain[i])); 
     }
@@ -184,12 +184,12 @@ printEQ2(LoudnessLow, "LOUDNESS LOW", false);
 printEQ2(LoudnessHigh, "LOUDNESS HIGH", false);
 
 Printf("\nGALA (SPEED-DEPENDENT VOLUME CONTROL)");
-Printf("\nLevel  \t Gain\n");
+Printf("\nLevel   \t Gain\n");
 Printf("==========================================");
 Printf("==========================================");
 Printf("==========================================\n");
 for ( i = 0; i < 7; i++ ) {
-    Printf("%-7i\t", i+1);
+    Printf("%-8i\t", i+1);
     for ( j = 0; j < 19; j++ ) {
         Printf("%5.2f ", calcAbsGain(GALA[i].value[j]));
     }
