@@ -18,9 +18,6 @@
 // gray        = seemingly irrelevant
 // blue        = special
 
-
-LittleEndian();
-
 typedef struct {
     byte min <bgcolor=cDkGreen>;
     byte center <bgcolor=cGreen>;
@@ -58,7 +55,7 @@ string getEffect(int type) {
 
 ubyte Clicks <bgcolor=cDkAqua>;
 ubyte ToneBands <bgcolor=cAqua>;
-ubyte unknown_6 <bgcolor=cLtAqua>;
+ubyte BalanceFadeControl <bgcolor=cLtAqua>;
 ubyte FocusEffect1 <bgcolor=cDkAqua, read=getEffect>;
 ubyte FocusEffect2 <bgcolor=cAqua, read=getEffect>;
 struct {

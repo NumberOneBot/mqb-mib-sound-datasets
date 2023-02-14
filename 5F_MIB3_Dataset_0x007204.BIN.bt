@@ -1,0 +1,136 @@
+//------------------------------------------------
+//--- 010 Editor v13.0 Binary Template
+//
+//      File: 0x007204.BIN
+//   Authors: Alex Strelets
+//   Version: 0.1
+//   Purpose: Parse the contents of the Sound Settings of MIB2
+//   Category:
+//   File Mask:
+//   ID Bytes:
+//   History: 0.1 - Initial version
+//
+//   Considering the following structure:
+//      Version - 0-3 bytes (values from 0x00000000 to 0x7F7F7F7F).
+//      Data is 4-145 bytes in hexadecimal format (each byte has values from 0x00 to 0xFF).
+//      Checksum - 146-149 bytes according to CRC-32 (values from 0x00000000 to 0xFFFFFFFF).
+//
+//
+//------------------------------------------------
+
+//------------------------------------------------
+// legend:
+// yellow/aqua = uncertain
+// red         = checksum
+// green       = confirmed
+// gray        = seemingly irrelevant
+// blue        = special
+
+typedef struct {
+    byte min <bgcolor=cDkGreen>;
+    byte max <bgcolor=cLtGreen>;
+} Bar;
+
+string getEffect(int type) {
+    switch(type) {
+        case 1: return "All";
+        case 2: return "Front";
+        case 4: return "Rear";
+        default:   return "Unknown";
+    }
+}
+
+char DatasetVersion[4] <bgcolor=cDkBlue>;
+ubyte UnknownBytes[3] <bgcolor=cGray>;
+Bar VolumeBar;
+struct {
+    Bar Balance;
+    Bar Fade;
+    Bar Trebble;
+    Bar Higher;
+    Bar Middle;
+    Bar Lower;
+    Bar Bass;
+    Bar Subwoofer;
+    Bar Unknown1;
+    Bar Unknown2;
+} ToneControls;
+
+/*
+ubyte Clicks <bgcolor=cDkAqua>;
+ubyte ToneBands <bgcolor=cAqua>;
+*/
+
+ubyte UnknownBytes2[3] <bgcolor=cGray>;
+ubyte BalanceFadeControl <bgcolor=cLtAqua>;
+ubyte FocusEffect1 <bgcolor=cDkAqua, read=getEffect>;
+ubyte FocusEffect2 <bgcolor=cAqua, read=getEffect>;
+ubyte FocusEffect3 <bgcolor=cLtAqua, read=getEffect>; 
+
+FSeek(87);
+
+// same structure as MIB2s 0x003B00 dataset has, 
+// but the values are two times smaller (MIB2val / 2)
+
+struct {
+    ubyte value[19] <bgcolor=cDkGray>;
+} UnknownGain;
+
+struct {
+    char brand[2] <bgcolor=cDkBlue>;
+    char platform[3] <bgcolor=cLtBlue>;
+    char unknown1[5] <bgcolor=cDkGray>;
+    char PR_Code[3] <bgcolor=cLtBlue>;
+    char unknown2[2] <bgcolor=cDkGray>;
+} Car;
+char DatasetVersion2[4] <bgcolor=cDkBlue>;
+struct {
+    char year[4] <bgcolor=cLtBlue>;
+    char month[2] <bgcolor=cLtBlue>;
+    char day[2] <bgcolor=cLtBlue>;
+} Date;
+byte UnknownStruct[13] <bgcolor=cGray>;
+
+FSeek(FileSize() - 4);
+uint checksum <bgcolor=cDkRed>;
+
+local int i;
+local int j;
+
+Printf("\nDATASET VERSION: %s",DatasetVersion2);
+Printf("\nDATASET DATE:    %s-%s-%s", Date.year, Date.month, Date.day);
+Printf("\nCAR BRAND:       %s", Car.brand);
+Printf("\nPLATFORM:        %s", Car.platform);
+Printf("\nPR-CODE:         %s\n", Car.PR_Code);
+
+Printf("\nVOLUME\n");
+Printf("Bar:\t [%2g .. %3g ]\n", VolumeBar.min, VolumeBar.max);
+
+Printf("\nTONE BARS\n");
+Printf("Balance:\t [%3g .. %2g ]\n",   ToneControls.Balance.min, ToneControls.Balance.max);
+Printf("Fade:\t [%3g .. %2g ]\n",      ToneControls.Fade.min, ToneControls.Fade.max);
+Printf("Trebble:\t [%3g .. %2g ]\n",   ToneControls.Trebble.min, ToneControls.Trebble.max);
+Printf("Higher:\t [%3g .. %2g ]\n",    ToneControls.Higher.min, ToneControls.Higher.max);
+Printf("Middle:\t [%3g .. %2g ]\n",    ToneControls.Middle.min,  ToneControls.Middle.max);
+Printf("Lower:\t [%3g .. %2g ]\n",     ToneControls.Lower.min,  ToneControls.Lower.max);
+Printf("Bass:\t [%3g .. %2g ]\n",      ToneControls.Bass.min, ToneControls.Bass.max);
+Printf("Subwoofer:\t [%3g .. %2g ]\n", ToneControls.Subwoofer.min, ToneControls.Subwoofer.max);
+Printf("Unknown1:\t [%3g .. %2g ]\n",  ToneControls.Unknown1.min,  ToneControls.Unknown1.max);
+Printf("Unknown2:\t [%3g .. %2g ]\n",  ToneControls.Unknown2.min, ToneControls.Unknown2.max);
+
+
+Printf("\nFocusing:\t [ %s\t> ]\n\t [ %s\t  ]\n\t [ %s\t  ]\n", 
+    getEffect(FocusEffect1), 
+    getEffect(FocusEffect2),
+    getEffect(FocusEffect3)
+);
+
+
+Printf("\nUNKNOWN GAIN\n");
+
+for (j = 0; j < 19; j++) {
+    Printf("%4g  ", UnknownGain.value[j]);
+}
+
+local uint file_checksum = Checksum(CHECKSUM_CRC32, 0, FileSize() - 4, -1, -1); // algo, size, length, poly, init
+Printf("\n\nFILE CHECKSUM: %.08X", file_checksum);
