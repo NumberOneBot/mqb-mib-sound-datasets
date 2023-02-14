@@ -136,13 +136,13 @@ void printEQ2(EQ2 &s, string name) {
 
 void printLoudnessEQ(LoudnessEQ &s, string name) {
     printEQ2Header(s.type, s.quality, s.frequency, name);
-    Printf("Volume: \t");
-    for (i = 0; i < 19; i++) {
-        Printf("%5g ", s.volume[i]);
-    }
-    Printf("\nGain:   \t");
+    Printf("Gain:   \t");
     for (i = 0; i < 19; i++) {
         Printf("%5.2f ", calcAbsGain(s.gain[i]));
+    }
+    Printf("\nVolume: \t");
+    for (i = 0; i < 19; i++) {
+        Printf("%5g ", s.volume[i]);
     }
     Printf("\n");
 }
@@ -311,8 +311,6 @@ Printf("===========================================================\n");
 Printf("Subwoofer                        \t  %7.2f\n", calcMaxGain(Subwoofer_maxGain));
 
 printLoudnessEQ(LoudnessLow, "LOUDNESS LOW");
-
-// LoudnessHigh seems to have a different format. Still to be found...
 printLoudnessEQ(LoudnessHigh, "LOUDNESS HIGH");
 
 
@@ -419,7 +417,7 @@ for (i = 0; i < 6; i++) {
         (char) UnknownEQ[i].Phase > 0 ? 'R' : '0'
     );
     Printf("------------------------------------------------\n");
-    Printf("Type\tQuality\t Frequency\t       Gain\n");
+    Printf("Type    \tQ Factor\t Frequency\t       Gain \n");
     Printf("================================================\n");
     printEQFilter(UnknownEQ[i].Filter1, 2);
     printEQFilter(UnknownEQ[i].Filter2, 2);
