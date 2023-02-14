@@ -1,19 +1,23 @@
 //------------------------------------------------
-//--- 010 Editor v13.0 Binary Template
+//--- 010 Editor v12.0 Binary Template
 //
-//      File: 0x003000.BIN
-//   Authors: Alex Strelets
-//   Version: 0.5
-//   Purpose: Parse the contents of the MIB2 Sound Channels and Effects
-//  Category:
-// File Mask:
-//  ID Bytes:
+//      File: 0x007201.BIN
+//   Authors: Joao Almeida, Alex Strelets
+//   Version: 0.3
+//   Purpose: Parse the contents of the MIB3 Sound Channels and Effects
+//   Category:
+//   File Mask:
+//   ID Bytes:
 //   History: 0.1 - Initial version
-//            0.2 - Limiters added
-//            0.3 - MIB1 vs MIB2 data sync
-//            0.5 - 'Sound Effects' table optimizations,
-//                  renaming, refactoring, cleanup
-//            0.5.1 -  THD max property found
+//            0.2 - Small tweaks performed.
+//            0.3 - Synced changes and tables with the latest MIB2 0x3000 dataset parser
+//
+//   Considering the following structure:
+//     Version - 0-3 bytes (values from 0x00000000 to 0x7F7F7F7F).
+//     Data is 4-2047 bytes in hexadecimal format (each byte has values from 0x00 to 0xFF).
+//     Checksum - 2048-2051 bytes according to CRC-32 (values from 0x00000000 to 0xFFFFFFFF).
+//
+//
 //------------------------------------------------
 
 BigEndian();
@@ -66,6 +70,14 @@ typedef struct {
     ubyte gain[19] <bgcolor=cDkAqua>;
 } EQ2;
 
+typedef struct {
+    ubyte type <bgcolor=cAqua, read=getFilterType>;
+    ubyte quality <bgcolor=cLtGreen>;
+    ushort frequency <bgcolor=cGreen>;
+    ubyte gain[19] <bgcolor=cDkAqua>;
+    ubyte volume[19]<bgcolor=cAqua>;    
+} LoudnessEQ;
+
 typedef struct (int length) {
     ubyte type <bgcolor=cAqua, read=getFilterType>;
     ubyte quality <bgcolor=cLtGreen>;
@@ -81,7 +93,6 @@ typedef struct {
     EQ3 Filter4(0);
     EQ3 Filter5(0);
     EQ3 Filter6(0);
-    EQ3 Filter7(0);
     byte Gain <bgcolor=cLtYellow>;
     ubyte Delay <bgcolor=cYellow>;
     ubyte Phase <bgcolor=cDkYellow>;
@@ -103,21 +114,19 @@ float calcMaxGain (ubyte value) {
     return (float) value / 15;
 }
 
-void printEQ2(EQ2 &s, string name, int unknownFlag) {
+void printEQ2Header(ubyte type, ubyte quality, ushort frequency, string name) {
     Printf("\n%s\nType    \tQ Factor\tFrequency\n", name);
     Printf("==================================\n");
     Printf("%-13s%7.1f\t %6gHz\n",
-        getFilterType(s.type),
-        calcQuality(s.quality),
-        s.frequency);
+        getFilterType(type),
+        calcQuality(quality),
+        frequency
+    );
     Printf("==================================\n");
-    if (!unknownFlag) {
-        Printf("Volume: \t");
-        for (i = 0; i < 19; i++) {
-            Printf("%5g ", 18 - i);
-        }
-        Printf("\n");
-    }
+}
+
+void printEQ2(EQ2 &s, string name) {
+    printEQ2Header(s.type, s.quality, s.frequency, name);
     Printf("Gain:   \t");
     for (i = 0; i < 19; i++) {
         Printf("%5.2f ", calcAbsGain(s.gain[i]));
@@ -125,7 +134,20 @@ void printEQ2(EQ2 &s, string name, int unknownFlag) {
     Printf("\n");
 }
 
-local string spacer = "\t\t\t";
+void printLoudnessEQ(LoudnessEQ &s, string name) {
+    printEQ2Header(s.type, s.quality, s.frequency, name);
+    Printf("Volume: \t");
+    for (i = 0; i < 19; i++) {
+        Printf("%5g ", s.volume[i]);
+    }
+    Printf("\nGain:   \t");
+    for (i = 0; i < 19; i++) {
+        Printf("%5.2f ", calcAbsGain(s.gain[i]));
+    }
+    Printf("\n");
+}
+
+local string spacer = "\t\t";
 
 void printEQFilter(EQ3 &filter, int index) {
     local string str = (index > 1 ? "\n" : spacer);
@@ -135,10 +157,6 @@ void printEQFilter(EQ3 &filter, int index) {
         filter.frequency,
         calcGain(filter.gain),
         str);
-}
-
-void printProfileName (int index) {
-    Printf("[ CarEQ SoundProfile #%i ]                       %s", index, index > 1 ? "\n\n": spacer);
 }
 
 string getChannelName(int index) {
@@ -155,7 +173,6 @@ string getChannelName(int index) {
 
 void printChannelHeader(CarEQ eq[], int index, int profileIndex) {
     local string str = (profileIndex > 1 ? "\n" : spacer);
-
     Printf("%s [ Gain: %-5.2f Delay: %.1fms Phase: %s ]%s",
         getChannelName(index),
         calcGain(eq[index].Gain),
@@ -164,8 +181,13 @@ void printChannelHeader(CarEQ eq[], int index, int profileIndex) {
         str);
 }
 
+void printProfileName (int index) {
+    Printf("[ CarEQ SoundProfile #%i ]                       %s", index, index > 2 ? "\n\n": spacer);
+}
+
 void printLines() {
     local string str = "------------------------------------------------%s";
+    Printf(str, spacer);
     Printf(str, spacer);
     Printf(str, "\n");
 }
@@ -173,33 +195,65 @@ void printLines() {
 void printDoubleLines() {
     local string str = "================================================%s";
     Printf(str, spacer);
+    Printf(str, spacer);
     Printf(str, "\n");
 }
 
 void printFiltersHeader() {
     local string str = "Type    \tQ Factor\t Frequency\t       Gain %s";
     Printf(str, spacer);
+    Printf(str, spacer);
     Printf(str, "\n");
 }
 
+// File read starts here
 
+char DatasetVersion[4] <bgcolor=cDkBlue>;
 byte Signalflow <bgcolor=cDkGreen, read=getSignalflow>;
-EQ ToneControls[5];
+EQ ToneControls[5] <bgcolor=cDkGreen>;
 ubyte Subwoofer_maxGain <bgcolor=cLtYellow>; // subwoofer gain ???
-EQ2 LoudnessLow;
-EQ2 LoudnessHigh;
+
+LoudnessEQ LoudnessLow <bgcolor=cDkGreen>;
+LoudnessEQ LoudnessHigh;
+
+// It seems that LoudnessHigh is very different from what it was previously.
+// We'll leave it like this for now. There are 42 hex missing to be interpreted
+// EQ2 LoudnessHigh;
+/*
+struct {
+    ubyte type <bgcolor=cAqua, read=getFilterType>;
+    ubyte quality <bgcolor=cLtGreen>;
+    ushort frequency <bgcolor=cGreen>;
+    struct { 
+        ubyte value[19] <bgcolor=cDkAqua>;
+    } Gains[3];
+} LoudnessHigh;
+*/
 struct {
     ubyte value[19] <bgcolor=cGray>;
 } GALA[7];
+
 EQ2 UnknownFilter_1;
-EQ2 UnknownFilter_2;
+
+// UnkownFilter_2 is also very Different from what it was.
+// There is now a new structure with 15 filters - to be confirmed when they are applied
+// These are not different by channel - Might be an overall equalizer to the system?
+
+EQ3 UnknownFilter_2(0)[15] <optimize=true>;
+
+// This boy is a bit lost in here
+
+byte UnkownFilter_2_Byte <bgcolor=cPurple>;
+
 CarEQ Profile_1[6] <optimize=true>;
 CarEQ Profile_2[6] <optimize=true>;
+CarEQ Profile_3[6] <optimize=true>;
 
+// We have 5 Bytes that we're not sure what they do here
 // one of those bytes could be "Limiter THDmax" [0 .. 30]
+
 struct {
-    byte unknown[6] <bgcolor=cPurple>;
-    byte THDmax <bgcolor=cBlue>;
+    byte unknown[5] <bgcolor=cPurple>;
 } Limiters; // Warmth ??? potentially
 
 struct {
@@ -209,13 +263,29 @@ struct {
     ubyte holdTime <bgcolor=cAqua>;
 } DRC[6];
 
-FSeek(FileSize() - 4);
+// We have 1 Bytes that we're not sure what they do here
+
+ubyte Unknown_Byte <bgcolor=cPurple>;
+
+// We have 6 (Channels) x 4 (Filters) on MIB3. Additinal exploration required
 
 struct {
-    char major <bgcolor=cDkBlue>;
-    char minor <bgcolor=cDkBlue>;
-} DatasetVersion;
-ushort checksum <bgcolor=cDkRed>;
+    EQ3 Filter1(0);
+    EQ3 Filter2(0);
+    EQ3 Filter3(0);
+    EQ3 Filter4(0);
+    byte Gain <bgcolor=cLtYellow>;
+    ubyte Delay <bgcolor=cYellow>;
+    ubyte Phase <bgcolor=cDkYellow>;
+} UnknownEQ[6] <optimize=true>;
+
+
+struct {
+    ubyte value[16] <bgcolor=cGray>;
+} UnknownStruct[4];
+
+FSeek(FileSize() - 4);
+uint checksum <bgcolor=cDkRed>;
 
 ////////////////////////
 /// PARSING FINISHED ///
@@ -225,8 +295,8 @@ local int i = 0;
 local int j = 0;
 local int k = 0;
 
+Printf("\nDATASET VERSION: %s",DatasetVersion);
 Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
-
 Printf("\nTONE CONTROLS\nType     \tQ Factor\tFrequency\t  MaxGain\tGainOffset\n");
 Printf("===========================================================\n");
 for (i = 0; i < 5; i++) {
@@ -240,8 +310,11 @@ for (i = 0; i < 5; i++) {
 Printf("===========================================================\n");
 Printf("Subwoofer                        \t  %7.2f\n", calcMaxGain(Subwoofer_maxGain));
 
-printEQ2(LoudnessLow, "LOUDNESS LOW", false);
-printEQ2(LoudnessHigh, "LOUDNESS HIGH", false);
+printLoudnessEQ(LoudnessLow, "LOUDNESS LOW");
+
+// LoudnessHigh seems to have a different format. Still to be found...
+printLoudnessEQ(LoudnessHigh, "LOUDNESS HIGH");
+
 
 Printf("\nGALA (SPEED-DEPENDENT VOLUME CONTROL)");
 Printf("\nLevel   \t Gain\n");
@@ -259,51 +332,72 @@ Printf("==========================================");
 Printf("==========================================");
 Printf("==========================================\n");
 
-printEQ2(UnknownFilter_1, "UNKNOWN FILTER 1", true);
-printEQ2(UnknownFilter_2, "UNKNOWN FILTER 2", true);
+
+printEQ2(UnknownFilter_1, "UNKNOWN FILTER 1");
+
+// Unkown Filter 2 is different on MIB3 - still to be confirmed. Adding a print for these 15 new filters
+// printEQ2(UnknownFilter_2, "UNKNOWN FILTER 2", true);
+// Adding new logic to print new(?) MIB3 Filters. Still TBC what these are
 
 Printf("\n");
+Printf("UNKNOWN FILTER 2\n");
+Printf("Type    \tQ Factor\t Frequency\t       Gain\n");
+Printf("================================================\n");
+for (i = 0; i < 15; i++) {
+    Printf("%-13s%7.1f\t  %6gHz\t      %5.2f\n",
+        getFilterType(UnknownFilter_2[i].type),
+        calcQuality(UnknownFilter_2[i].quality),
+        UnknownFilter_2[i].frequency,
+        calcGain(UnknownFilter_2[i].gain)
+    );
+}
+Printf("================================================\n\n");
 
 printProfileName(1);
 printProfileName(2);
+printProfileName(3);
 for (i = 0; i < 6; i++) {
     printChannelHeader(Profile_1, i, 1);
-    printChannelHeader(Profile_2, i, 2);
+    printChannelHeader(Profile_2, i, 1);
+    printChannelHeader(Profile_3, i, 2);
     printLines();
     printFiltersHeader();
     printDoubleLines();
     printEQFilter(Profile_1[i].Filter1, 1);
-    printEQFilter(Profile_2[i].Filter1, 2);
+    printEQFilter(Profile_2[i].Filter1, 1);
+    printEQFilter(Profile_3[i].Filter1, 2);
     printEQFilter(Profile_1[i].Filter2, 1);
-    printEQFilter(Profile_2[i].Filter2, 2);
+    printEQFilter(Profile_2[i].Filter2, 1);
+    printEQFilter(Profile_3[i].Filter2, 2);
     printEQFilter(Profile_1[i].Filter3, 1);
-    printEQFilter(Profile_2[i].Filter3, 2);
+    printEQFilter(Profile_2[i].Filter3, 1);
+    printEQFilter(Profile_3[i].Filter3, 2);
     printEQFilter(Profile_1[i].Filter4, 1);
-    printEQFilter(Profile_2[i].Filter4, 2);
+    printEQFilter(Profile_2[i].Filter4, 1);
+    printEQFilter(Profile_3[i].Filter4, 2);
     printEQFilter(Profile_1[i].Filter5, 1);
-    printEQFilter(Profile_2[i].Filter5, 2);
+    printEQFilter(Profile_2[i].Filter5, 1);
+    printEQFilter(Profile_3[i].Filter5, 2);
     printEQFilter(Profile_1[i].Filter6, 1);
-    printEQFilter(Profile_2[i].Filter6, 2);
-    printEQFilter(Profile_1[i].Filter7, 1);
-    printEQFilter(Profile_2[i].Filter7, 2);
+    printEQFilter(Profile_2[i].Filter6, 1);
+    printEQFilter(Profile_3[i].Filter6, 2);
     printDoubleLines();
     Printf("\n");
 }
 
 Printf("LIMITERS\n");
-Printf("\t\t\t      THD\n");
-Printf("----------------------------------------------\n");
-for (i = 0; i < 6; i++) {
-    Printf("%3i    ", Limiters.unknown[i]);
+//Printf("\t\t\t\n");
+Printf("------------------------------------------------\n");
+for (i = 0; i < 5; i++) {
+    Printf("%6i    ", Limiters.unknown[i]);
 }
-Printf("%3i", Limiters.THDmax);
 Printf("\n\n");
 
 Printf("DYNAMIC RANGE COMPRESSION\n");
 Printf("Channel  Threshold   Attack     Hold    Release\n");
 Printf("================================================\n");
 for (i = 0; i < 6; i++) {
-    Printf("%s   %5.1f   %6.1f   %6.1f     %4gms\n",
+    Printf("%s   %5.1f   %6.1f   %6.1f     %6g\n",
         getChannelName(i),
         DRC[i].threshold / -20,         // [-20 .. 0 ]
         (float) DRC[i].attackTime / 20, // [0.5 .. 20]
@@ -313,5 +407,28 @@ for (i = 0; i < 6; i++) {
 }
 Printf("================================================");
 
-local ushort file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init
-Printf("\n\nFILE CHECKSUM: %.04X", file_checksum);
+// Adding new logic to print new(?) MIB3 Filters. Still TBC what these are
+
+Printf("\n\n");
+Printf("GLOBAL FILTER 3\n\n");
+for (i = 0; i < 6; i++) {
+    Printf("%s [ Gain: %-5.2f Delay: %.1fms Phase: %s ]\n",
+        getChannelName(i),
+        calcGain(UnknownEQ[i].Gain),
+        (float) UnknownEQ[i].Delay / 10,
+        (char) UnknownEQ[i].Phase > 0 ? 'R' : '0'
+    );
+    Printf("------------------------------------------------\n");
+    Printf("Type\tQuality\t Frequency\t       Gain\n");
+    Printf("================================================\n");
+    printEQFilter(UnknownEQ[i].Filter1, 2);
+    printEQFilter(UnknownEQ[i].Filter2, 2);
+    printEQFilter(UnknownEQ[i].Filter3, 2);
+    printEQFilter(UnknownEQ[i].Filter4, 2);
+    Printf("================================================\n\n");
+}
+
+// Ignoring for now
+
+local uint file_checksum = Checksum(CHECKSUM_CRC32, 0, FileSize() - 4, -1, -1); // algo, size, length, poly, init
+Printf("\nFILE CHECKSUM: %.04X", file_checksum);

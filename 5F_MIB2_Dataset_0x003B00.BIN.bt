@@ -5,13 +5,13 @@
 //   Authors: Alex Strelets
 //   Version: 0.1
 //   Purpose: Parse the contents of the Sound Settings of MIB2
-//  Category: 
-// File Mask: 
-//  ID Bytes: 
+//  Category:
+// File Mask:
+//  ID Bytes:
 //   History: 0.1 - Initial version
 
 //------------------------------------------------
-// legend: 
+// legend:
 // yellow/aqua = uncertain
 // red         = checksum
 // green       = confirmed
@@ -51,7 +51,7 @@ string getEffect(int type) {
         case 4: return "Movie";
         case 8: return "Front";
         case 16: return "Back";
-        default:   return "Unknown";      
+        default:   return "Unknown";
     }
 }
 
@@ -95,31 +95,5 @@ for (j = 0; j < 19; j++) {
     Printf("%4g  ", UnknownGain.value[j]);
 }
 
-/*
-Printf("\nGLOBAL EQUALIZER\n");
-Printf("  0Hz\t  10Hz\t  20Hz\t  30Hz\t  40Hz\t  50Hz\t 100Hz\t 200Hz\t 300Hz\t 400Hz\t 500Hz\t 1kHz\t 2kHz\t 3kHz\t 4kHz\t 5kHz\t 10kHz\t 15kHz\t 20kHz\t\n");
-local int k;
-for (i = 21; i > -1; i--) {
-    for (j = 0; j < 19; j++) {
-        k = UnknownGain.value[j] / (j+1) - 10;
-        if (k == i-10) {
-            if (k < 0) {
-                if (k < -9) {
-                    Printf(" =%i=\t", k);    
-                } else {
-                    Printf(" =%i==\t", k);    
-                }
-            } else {
-                Printf(" ==%i==\t", k);    
-            }
-        } else {
-            Printf("   |\t");    
-        }        
-    }
-    Printf("\n");
-}
-Printf("\n");
-*/
-
-local int file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init 
-Printf("\n\nFILE CHECKSUM: %.04X", file_checksum);  
+local int file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init
+Printf("\n\nFILE CHECKSUM: %.04X", file_checksum);
