@@ -41,6 +41,10 @@ string getEffect(int type) {
 }
 
 char DatasetVersion[4] <bgcolor=cDkBlue>;
+
+// first byte is '2' in 8RL speaker configuration,
+// '3' in 9VD, and '11' in 9VS
+
 ubyte UnknownBytes[3] <bgcolor=cGray>;
 Bar VolumeBar;
 struct {
@@ -61,7 +65,7 @@ ubyte Clicks <bgcolor=cDkAqua>;
 ubyte ToneBands <bgcolor=cAqua>;
 */
 
-ubyte UnknownBytes2[3] <bgcolor=cGray>;
+ubyte UnknownBytes2[3] <bgcolor=cGray>; // second byte is '2' for Bang&Olufsen system
 ubyte BalanceFadeControl <bgcolor=cLtAqua>;
 ubyte FocusEffect1 <bgcolor=cDkAqua, read=getEffect>;
 ubyte FocusEffect2 <bgcolor=cAqua, read=getEffect>;

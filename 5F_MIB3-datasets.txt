@@ -2,8 +2,8 @@
 0x7202 Audio-Parameter Sound Announcement (AP-SOUND-ANN)
 0x7203 Audio-Parameter Sound Cabrio (AP-SOUND-CAB)
 0x7204 Audio-Parameter Sound Configuration (AP-SOUND-CON)
-0x7206 Speaker configuration Channel 1-8 (LS-CON-01-08)
-0x7207 Speaker configuration Channel 9-16 (LS-CON-09-16)
+0x7206 Speaker Configuration Channel 1-8 (LS-CON-01-08)
+0x7207 Speaker Configuration Channel 9-16 (LS-CON-09-16)
 0x7208
 0x7209 Eco HMI (ECO-HMI-----)
 0x720A DAB Frequency tables (DAB-FREQ-TAB)

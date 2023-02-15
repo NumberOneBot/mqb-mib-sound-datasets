@@ -1,0 +1,39 @@
+//------------------------------------------------
+//--- 010 Editor v13.0 Binary Template
+//
+//      File: 0x007206.BIN
+//   Authors: Alex Strelets
+//   Version: 0.1
+//   Purpose: Parse the contents of the Sound Settings of MIB3
+//   Category:
+//   File Mask:
+//   ID Bytes:
+//   History: 0.1 - Initial version
+//
+//------------------------------------------------
+
+//------------------------------------------------
+// legend:
+// yellow/aqua = uncertain
+// red         = checksum
+// green       = confirmed
+// gray        = seemingly irrelevant
+// blue        = special
+
+char DatasetVersion[4] <bgcolor=cDkBlue>;
+
+struct {
+    ubyte index <bgcolor=cDkYellow>; // index / position of the speaker ?, the values are always unique per dataset
+    struct {
+        ubyte value1 <bgcolor=cAqua>; // those values could be 144 or 147
+        ubyte value2 <bgcolor=cDkAqua>;
+        ubyte value3 <bgcolor=cLtAqua>; // those values are ALWAYS the same [ 19, 19, 17, 18, 240 ]
+    } something[5];
+    ubyte empty[6] <bgcolor=cDkGray>;
+} SpeakerChannels[8];
+
+FSeek(FileSize() - 4);
+uint checksum <bgcolor=cDkRed>;
+
+local uint file_checksum = Checksum(CHECKSUM_CRC32, 0, FileSize() - 4, -1, -1); // algo, size, length, poly, init
+Printf("\n\nFILE CHECKSUM: %.08X", file_checksum);
