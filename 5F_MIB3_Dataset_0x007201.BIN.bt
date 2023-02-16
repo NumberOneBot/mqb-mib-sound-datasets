@@ -27,6 +27,7 @@ string getSignalflow(int type) {
         case 0x10: return "2ch (4.0)";
         case 0x20: return "4ch (8.0)";
         case 0x21: return "4ch / 2ch compatible (8.0 / 4.0)";
+        case 0x25: return "5ch center (9.0)"; // SEAT ONLY, needs more investigation
         case 0x30: return "6ch center sub (9.1)";
         case 0x31: return "6ch center sub / 2/4ch compatible (9.1 / 8.0 / 4.0)";
         case 0x32: return "6ch doublesub (8.2)";
@@ -280,9 +281,9 @@ struct {
 } UnknownEQ[6] <optimize=true>;
 
 
-struct {
-    ubyte value[16] <bgcolor=cGray>;
-} UnknownStruct[4];
+ubyte empty[51] <bgcolor=cBlack>;
+char Identifier[8] <bgcolor=cBlue>;
+ubyte empty2[5] <bgcolor=cBlack>;
 
 FSeek(FileSize() - 4);
 uint checksum <bgcolor=cDkRed>;

@@ -41,19 +41,16 @@ string getEffect(int type) {
 }
 
 char DatasetVersion[4] <bgcolor=cDkBlue>;
-
-// first byte is '2' in 8RL speaker configuration,
-// '3' in 9VD, and '11' in 9VS
-
-ubyte UnknownBytes[3] <bgcolor=cGray>;
+char UnknownChar <bgcolor=cDkRed>; // this char available in VW/SK/SE cars, but not used in Audis
+ubyte UnknownBytes[2] <bgcolor=cDkGray>;
 Bar VolumeBar;
 struct {
     Bar Balance;
     Bar Fade;
-    Bar Trebble;
-    Bar Higher;
+    Bar Treble;
+    Bar MidTreble;
     Bar Middle;
-    Bar Lower;
+    Bar MidBass;
     Bar Bass;
     Bar Subwoofer;
     Bar Unknown1;
@@ -65,35 +62,52 @@ ubyte Clicks <bgcolor=cDkAqua>;
 ubyte ToneBands <bgcolor=cAqua>;
 */
 
-ubyte UnknownBytes2[3] <bgcolor=cGray>; // second byte is '2' for Bang&Olufsen system
+struct {
+    ubyte TouchScreen <bgcolor=cYellow>;
+    ubyte MenuButton <bgcolor=cDkYellow>; // set to '2' in Audi Bang&Olufsen systems
+    ubyte HandGestures <bgcolor=cYellow>;
+} ClickControls;
+
 ubyte BalanceFadeControl <bgcolor=cLtAqua>;
-ubyte FocusEffect1 <bgcolor=cDkAqua, read=getEffect>;
-ubyte FocusEffect2 <bgcolor=cAqua, read=getEffect>;
-ubyte FocusEffect3 <bgcolor=cLtAqua, read=getEffect>; 
 
-FSeek(87);
+// 1-2-3 effects are usually set in the first array only
+// but Seats have only the second array prefilled with some values
 
-// same structure as MIB2s 0x003B00 dataset has, 
+struct {
+    ubyte effect[8] <bgcolor=cAqua, read=getEffect>;
+} FocusEffects[2];
+
+struct {
+    ubyte value[19] <bgcolor=cBlack>;
+} MinMaxGains[2];
+
+// same structure as MIB2s 0x003B00 dataset has,
 // but the values are two times smaller (MIB2val / 2)
 
 struct {
     ubyte value[19] <bgcolor=cDkGray>;
 } UnknownGain;
 
-struct {
-    char brand[2] <bgcolor=cDkBlue>;
-    char platform[3] <bgcolor=cLtBlue>;
-    char unknown1[5] <bgcolor=cDkGray>;
-    char PR_Code[3] <bgcolor=cLtBlue>;
-    char unknown2[2] <bgcolor=cDkGray>;
-} Car;
-char DatasetVersion2[4] <bgcolor=cDkBlue>;
-struct {
-    char year[4] <bgcolor=cLtBlue>;
-    char month[2] <bgcolor=cLtBlue>;
-    char day[2] <bgcolor=cLtBlue>;
-} Date;
-byte UnknownStruct[13] <bgcolor=cGray>;
+char Car_Brand[2] <bgcolor=cDkBlue>;
+/*
+if (Car_Brand == "AU") {
+    struct {
+        char platform[3] <bgcolor=cLtBlue>;
+        char unknown1[5] <bgcolor=cDkGray>;
+        char PR_Code[3] <bgcolor=cLtBlue>;
+        char unknown2[2] <bgcolor=cDkGray>;
+    } Car;
+    char DatasetVersion2[4] <bgcolor=cDkBlue>;
+    struct {
+        char year[4] <bgcolor=cLtBlue>;
+        char month[2] <bgcolor=cLtBlue>;
+        char day[2] <bgcolor=cLtBlue>;
+    } Date;
+    byte UnknownStruct[13] <bgcolor=cGray>;
+} else {
+*/
+    char Car_Identifier[38] <bgcolor=cLtBlue>;
+// }
 
 FSeek(FileSize() - 4);
 uint checksum <bgcolor=cDkRed>;
@@ -101,11 +115,17 @@ uint checksum <bgcolor=cDkRed>;
 local int i;
 local int j;
 
-Printf("\nDATASET VERSION: %s",DatasetVersion2);
-Printf("\nDATASET DATE:    %s-%s-%s", Date.year, Date.month, Date.day);
-Printf("\nCAR BRAND:       %s", Car.brand);
-Printf("\nPLATFORM:        %s", Car.platform);
-Printf("\nPR-CODE:         %s\n", Car.PR_Code);
+Printf("\nDATASET VERSION: %s",DatasetVersion);
+/*
+if (Car_Brand == "AU") {
+    Printf("\nDATASET DATE:    %s-%s-%s", Date.year, Date.month, Date.day);
+    Printf("\nCAR BRAND:       %s", Car_Brand);
+    Printf("\nPLATFORM:        %s", Car.platform);
+    Printf("\nPR-CODE:         %s\n", Car.PR_Code);
+} else {
+*/
+    Printf("\nCAR IDENTIFIER:  %s%s\n", Car_Brand, Car_Identifier);
+// }
 
 Printf("\nVOLUME\n");
 Printf("Bar:\t [%2g .. %3g ]\n", VolumeBar.min, VolumeBar.max);
@@ -113,25 +133,40 @@ Printf("Bar:\t [%2g .. %3g ]\n", VolumeBar.min, VolumeBar.max);
 Printf("\nTONE BARS\n");
 Printf("Balance:\t [%3g .. %2g ]\n",   ToneControls.Balance.min, ToneControls.Balance.max);
 Printf("Fade:\t [%3g .. %2g ]\n",      ToneControls.Fade.min, ToneControls.Fade.max);
-Printf("Trebble:\t [%3g .. %2g ]\n",   ToneControls.Trebble.min, ToneControls.Trebble.max);
-Printf("Higher:\t [%3g .. %2g ]\n",    ToneControls.Higher.min, ToneControls.Higher.max);
+Printf("Treble:\t [%3g .. %2g ]\n",    ToneControls.Treble.min, ToneControls.Treble.max);
+Printf("MidTreble:\t [%3g .. %2g ]\n", ToneControls.MidTreble.min, ToneControls.MidTreble.max);
 Printf("Middle:\t [%3g .. %2g ]\n",    ToneControls.Middle.min,  ToneControls.Middle.max);
-Printf("Lower:\t [%3g .. %2g ]\n",     ToneControls.Lower.min,  ToneControls.Lower.max);
+Printf("MidBass:\t [%3g .. %2g ]\n",   ToneControls.MidBass.min,  ToneControls.MidBass.max);
 Printf("Bass:\t [%3g .. %2g ]\n",      ToneControls.Bass.min, ToneControls.Bass.max);
 Printf("Subwoofer:\t [%3g .. %2g ]\n", ToneControls.Subwoofer.min, ToneControls.Subwoofer.max);
 Printf("Unknown1:\t [%3g .. %2g ]\n",  ToneControls.Unknown1.min,  ToneControls.Unknown1.max);
 Printf("Unknown2:\t [%3g .. %2g ]\n",  ToneControls.Unknown2.min, ToneControls.Unknown2.max);
 
 
-Printf("\nFocusing:\t [ %s\t> ]\n\t [ %s\t  ]\n\t [ %s\t  ]\n", 
-    getEffect(FocusEffect1), 
+// Printf("\nFocusing:");
+/*Printf("\t [ %s\t> ]\n\t [ %s\t  ]\n\t [ %s\t  ]\n\t [ %s\t  ]\n",
+    getEffect(FocusEffect1),
     getEffect(FocusEffect2),
-    getEffect(FocusEffect3)
-);
+    getEffect(FocusEffect3),
+    getEffect(FocusEffect4)
+);*/
+
+Printf("\nUNKNOWN GAIN LEVELS\n[ ");
+for (i = -9; i < 10; i++) {
+    Printf("%4g  ", i);
+}
+Printf("]\n  ");
+for (i = 0; i < 19; i++) {
+    Printf("%4g  ", MinMaxGains[0].value[i]);
+}
+Printf("\n  ");
+for (i = 0; i < 19; i++) {
+    Printf("%4g  ", MinMaxGains[1].value[i]);
+}
+Printf("\n");
 
 
-Printf("\nUNKNOWN GAIN\n");
-
+Printf("\nUNKNOWN GAIN\n  ");
 for (j = 0; j < 19; j++) {
     Printf("%4g  ", UnknownGain.value[j]);
 }

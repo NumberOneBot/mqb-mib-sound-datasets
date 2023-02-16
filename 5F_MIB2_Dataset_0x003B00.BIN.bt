@@ -33,10 +33,10 @@ struct {
 struct {
     Knob Balance;
     Knob Fade;
-    Knob Trebble;
-    Knob Higher;
+    Knob Treble;
+    Knob MidTreble;
     Knob Middle;
-    Knob Lower;
+    Knob MidBass;
     Knob Bass;
     Knob Subwoofer;
 } ToneControls;
@@ -55,6 +55,13 @@ string getEffect(int type) {
 
 ubyte Clicks <bgcolor=cDkAqua>;
 ubyte ToneBands <bgcolor=cAqua>;
+
+// Looks like a bit mask to show 3 variations of Balance/Fade screen
+// 00000001: Could be Balance bar only
+// 00000010: Fade bar or submenu
+// 00000100: Top-down view with free position movement by touch
+// So, '7' (00000111) as a value enables them all
+
 ubyte BalanceFadeControl <bgcolor=cLtAqua>;
 ubyte FocusEffect1 <bgcolor=cDkAqua, read=getEffect>;
 ubyte FocusEffect2 <bgcolor=cAqua, read=getEffect>;
@@ -78,10 +85,10 @@ Printf("Bar:\t [%2g .. %2g .. %3g ]\n", VolumeBar.min, VolumeBar.unknown, Volume
 Printf("\nKNOBS\n");
 Printf("Balance:\t [%3g .. %1g .. %1g ]\n",   ToneControls.Balance.min, ToneControls.Balance.center, ToneControls.Balance.max);
 Printf("Fade:\t [%3g .. %1g .. %1g ]\n",      ToneControls.Fade.min, ToneControls.Fade.center, ToneControls.Fade.max);
-Printf("Trebble:\t [%3g .. %1g .. %1g ]\n",   ToneControls.Trebble.min, ToneControls.Trebble.center, ToneControls.Trebble.max);
-Printf("Higher:\t [%3g .. %1g .. %1g ]\n",    ToneControls.Higher.min, ToneControls.Higher.center, ToneControls.Higher.max);
+Printf("Treble:\t [%3g .. %1g .. %1g ]\n",    ToneControls.Treble.min, ToneControls.Treble.center, ToneControls.Treble.max);
+Printf("MidTreble:\t [%3g .. %1g .. %1g ]\n", ToneControls.MidTreble.min, ToneControls.MidTreble.center, ToneControls.MidTreble.max);
 Printf("Middle:\t [%3g .. %1g .. %1g ]\n",    ToneControls.Middle.min, ToneControls.Middle.center, ToneControls.Middle.max);
-Printf("Lower:\t [%3g .. %1g .. %1g ]\n",     ToneControls.Lower.min, ToneControls.Lower.center, ToneControls.Lower.max);
+Printf("MidBass:\t [%3g .. %1g .. %1g ]\n",   ToneControls.MidBass.min, ToneControls.MidBass.center, ToneControls.MidBass.max);
 Printf("Bass:\t [%3g .. %1g .. %1g ]\n",      ToneControls.Bass.min, ToneControls.Bass.center, ToneControls.Bass.max);
 Printf("Subwoofer:\t [%3g .. %1g .. %1g ]\n", ToneControls.Subwoofer.min, ToneControls.Subwoofer.center, ToneControls.Subwoofer.max);
 
