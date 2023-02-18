@@ -172,12 +172,23 @@ string getChannelName(int index) {
     return Str("CHANNEL_%i ", index+1);
 }
 
+string getEQBand(int index) {
+    switch (index) {
+        case 0: return "Bass"; break;
+        case 1: return "MidBass "; break;
+        case 2: return "Middle"; break;
+        case 3: return "MidTreble"; break;
+        case 4: return "Treble"; break;
+    }
+    return Str("Band_%i ", index+1);
+}
+
 void printChannelHeader(CarEQ eq[], int index, int profileIndex) {
     local string str = (profileIndex > 1 ? "\n" : spacer);
-    Printf("%s [ Gain: %-5.2f Delay: %.1fms Phase: %s ]%s",
+    Printf("%s [ Gain: %-6.2f Delay: %-2gms Phase: %s ]%s",
         getChannelName(index),
         calcGain(eq[index].Gain),
-        (float) eq[index].Delay / 10,
+        (float) eq[index].Delay,
         (char) eq[index].Phase > 0 ? 'R' : '0',
         str);
 }
@@ -298,18 +309,21 @@ local int k = 0;
 
 Printf("\nDATASET VERSION: %s",DatasetVersion);
 Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
-Printf("\nTONE CONTROLS\nType     \tQ Factor\tFrequency\t  MaxGain\tGainOffset\n");
-Printf("===========================================================\n");
+
+Printf("\nEQ TONE CONTROLS");
+Printf("\nBand     \tType     \tQ Factor\tFrequency\t  MaxGain\tGainOffset\n");
+Printf("=======================================================================\n");
 for (i = 0; i < 5; i++) {
-    Printf("%-13s%7.1f\t %6gHz\t  %7.2f\t%10.2f\n",
+    Printf("%-8s\t%-13s%7.1f\t %6gHz\t  %7.2f\t%10.2f\n",
+        getEQBand(i),
         getFilterType(ToneControls[i].type),
         calcQuality(ToneControls[i].quality),
         ToneControls[i].frequency,
         calcMaxGain(ToneControls[i].maxGain),
         ToneControls[i].gainOffset / 12);
 }
-Printf("===========================================================\n");
-Printf("Subwoofer                        \t  %7.2f\n", calcMaxGain(Subwoofer_maxGain));
+Printf("=======================================================================\n");
+Printf("Subwoofer                        \t              %7.2f\n", calcMaxGain(Subwoofer_maxGain));
 
 printLoudnessEQ(LoudnessLow, "LOUDNESS LOW");
 printLoudnessEQ(LoudnessHigh, "LOUDNESS HIGH");
@@ -411,10 +425,10 @@ Printf("================================================");
 Printf("\n\n");
 Printf("GLOBAL FILTER 3\n\n");
 for (i = 0; i < 6; i++) {
-    Printf("%s [ Gain: %-5.2f Delay: %.1fms Phase: %s ]\n",
+    Printf("%s [ Gain: %-6.2f Delay: %-2gms Phase: %s ]\n",
         getChannelName(i),
         calcGain(UnknownEQ[i].Gain),
-        (float) UnknownEQ[i].Delay / 10,
+        (float) UnknownEQ[i].Delay,
         (char) UnknownEQ[i].Phase > 0 ? 'R' : '0'
     );
     Printf("------------------------------------------------\n");

@@ -23,6 +23,7 @@ string getSignalflow(int type) {
         case 0x10: return "2ch (4.0)";
         case 0x20: return "4ch (8.0)";
         case 0x21: return "4ch / 2ch compatible (8.0 / 4.0)";
+        case 0x25: return "5ch (9.0)";
         case 0x30: return "6ch center sub (9.1)";
         case 0x31: return "6ch center sub / 2/4ch compatible (9.1 / 8.0 / 4.0)";
         case 0x32: return "6ch doublesub (8.2)";
@@ -104,7 +105,8 @@ float calcMaxGain (ubyte value) {
 }
 
 void printEQ2(EQ2 &s, string name, int unknownFlag) {
-    Printf("\n%s\nType    \tQ Factor\tFrequency\n", name);
+    Printf("\n%s", name);
+    Printf("\nType    \tQ Factor\tFrequency\n");
     Printf("==================================\n");
     Printf("%-13s%7.1f\t %6gHz\n",
         getFilterType(s.type),
@@ -153,13 +155,24 @@ string getChannelName(int index) {
     return Str("CHANNEL_%i ", index+1);
 }
 
+string getEQBand(int index) {
+    switch (index) {
+        case 0: return "Bass"; break;
+        case 1: return "MidBass "; break;
+        case 2: return "Middle"; break;
+        case 3: return "MidTreble"; break;
+        case 4: return "Treble"; break;
+    }
+    return Str("Band_%i ", index+1);
+}
+
 void printChannelHeader(CarEQ eq[], int index, int profileIndex) {
     local string str = (profileIndex > 1 ? "\n" : spacer);
 
-    Printf("%s [ Gain: %-5.2f Delay: %.1fms Phase: %s ]%s",
+    Printf("%s [ Gain: %-6.2f Delay: %-2gms Phase: %s ]%s",
         getChannelName(index),
         calcGain(eq[index].Gain),
-        (float) eq[index].Delay / 10,
+        (float) eq[index].Delay,
         (char) eq[index].Phase > 0 ? 'R' : '0',
         str);
 }
@@ -227,18 +240,21 @@ local int k = 0;
 
 Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
 
-Printf("\nTONE CONTROLS\nType     \tQ Factor\tFrequency\t  MaxGain\tGainOffset\n");
-Printf("===========================================================\n");
+Printf("\nEQ TONE CONTROLS");
+Printf("\nBand     \tType     \tQ Factor\tFrequency\t  MaxGain\tGainOffset\n");
+Printf("=======================================================================\n");
 for (i = 0; i < 5; i++) {
-    Printf("%-13s%7.1f\t %6gHz\t  %7.2f\t%10.2f\n",
+    Printf("%-8s\t%-13s%7.1f\t %6gHz\t  %7.2f\t%10.2f\n",
+        getEQBand(i),
         getFilterType(ToneControls[i].type),
         calcQuality(ToneControls[i].quality),
         ToneControls[i].frequency,
         calcMaxGain(ToneControls[i].maxGain),
         ToneControls[i].gainOffset / 12);
 }
-Printf("===========================================================\n");
-Printf("Subwoofer                        \t  %7.2f\n", calcMaxGain(Subwoofer_maxGain));
+Printf("=======================================================================\n");
+Printf("Subwoofer                        \t              %7.2f\n", calcMaxGain(Subwoofer_maxGain));
+
 
 printEQ2(LoudnessLow, "LOUDNESS LOW", false);
 printEQ2(LoudnessHigh, "LOUDNESS HIGH", false);
@@ -300,10 +316,10 @@ Printf("%3i", Limiters.THDmax);
 Printf("\n\n");
 
 Printf("DYNAMIC RANGE COMPRESSION\n");
-Printf("Channel  Threshold   Attack     Hold    Release\n");
+Printf("Channel    Threshold   Attack    Hold   Release\n");
 Printf("================================================\n");
 for (i = 0; i < 6; i++) {
-    Printf("%s   %5.1f   %6.1f   %6.1f     %4gms\n",
+    Printf("%s   %5.1fdB   %6.1f  %6.1f    %4gms\n",
         getChannelName(i),
         DRC[i].threshold / -20,         // [-20 .. 0 ]
         (float) DRC[i].attackTime / 20, // [0.5 .. 20]
