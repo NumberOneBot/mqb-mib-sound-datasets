@@ -23,7 +23,7 @@ string getSignalflow(int type) {
         case 0x10: return "2ch (4.0)";
         case 0x20: return "4ch (8.0)";
         case 0x21: return "4ch / 2ch compatible (8.0 / 4.0)";
-        case 0x25: return "5ch (9.0)";
+        case 0x25: return "5ch center (9.0)";
         case 0x30: return "6ch center sub (9.1)";
         case 0x31: return "6ch center sub / 2/4ch compatible (9.1 / 8.0 / 4.0)";
         case 0x32: return "6ch doublesub (8.2)";
