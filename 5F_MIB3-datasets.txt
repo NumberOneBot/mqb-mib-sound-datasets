@@ -1,16 +1,16 @@
-0x7201 Audio-Parameter Sound (AP-SOUND----)
-0x7202 Audio-Parameter Sound Announcement (AP-SOUND-ANN)
-0x7203 Audio-Parameter Sound Cabrio (AP-SOUND-CAB)
-0x7204 Audio-Parameter Sound Configuration (AP-SOUND-CON)
+0x7201 Audio Parameter Sound (AP-SOUND----)
+0x7202 Audio Parameter Sound Announcement (AP-SOUND-ANN)
+0x7203 Audio Parameter Sound Cabrio (AP-SOUND-CAB)
+0x7204 Audio Parameter Sound Configuration (AP-SOUND-CON)
 0x7206 Speaker Configuration Channel 1-8 (LS-CON-01-08)
 0x7207 Speaker Configuration Channel 9-16 (LS-CON-09-16)
-0x7208
+0x7208 Speaker Configuration Channel 9-16 (LS-CON-17-24)
 0x7209 Eco HMI (ECO-HMI-----)
 0x720A DAB Frequency tables (DAB-FREQ-TAB)
 0x720B Sprache (SPRACHE-----)
 0x720C Sichtbare MMI Systemsprachen (MMI-SYSTSPRA)
 0x720D Geschwindigkeitsabschaltschwellen (GESCHWABSCHW)
-0x720E
+0x720E Early Sound Acoustical Parking System (EA-SO-ACO-PS)
 0x720F
 0x7210 Speech Signal Enhancement 1 (SPEECHSE---1): Усиление сигнала Phone Bluetooth
 0x7211 Speech Signal Enhancement 2 (SPEECHSE---2): Усиление сигнала Phone Carplay
