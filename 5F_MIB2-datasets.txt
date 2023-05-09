@@ -3,20 +3,20 @@ HEX/ZDC			M.I.B				Dataset name
 0x200			b:10:0xC0030004		[LO]_ASAM_ODX_MUX_dataset - unit identifier string is stored here.
 0x240			b:10:0xC0030002		[LO]_hmi_control_speed_dataset - responsible for disabling functions when speed thresholds are exceeded
 0x280			b:10:0xC0030005		[LO]_language_dataset — languages that are used by default for the interface, voice control and navigation are stored here. These languages must be present in the
-0x280			b:10:0xC0030006		[LO]_visible_MMI_language_dataset — contains strings-identifiers of languages available for selection in the user interface language settings menu. These languages must be available in the file \tsd\hmi\HMI\config\lang_hmi_builtin.config (MIB STD2) or \mmx\eso\hmi\lsd\lang_hmi_builtin.config (MIB2 HIGH) of the installed firmware. The first byte in your data is the number of available languages:
-0x2C00 /0x440	b:0:0xC0030000 / b:10:0xC0030000	[LO]_powermanagment_timer_dataset - 0x440 (MIB2 Entry/STD), 0x2C00 (MIB2 HIGH) — contains power management settings
-0x3000			b:0:0xC0030014		[LO]_audio_parameter_sound_dataset — configures basic sound processing. It depends on the number of speakers, left/right-hand drive, geometry of the interior of the car, and so on. On systems with external sound processing (e.g. Canton), it may not be available.
 0x460			b:0:0xC0030007		[LO]_DAB_frequency_dataset — configures digital radio reception parameters in countries with specific frequency bands
-0x3600			b:0:0xC0030022 		[LO]_audio_parameter_sound_announcement_dataset — configures the sound processing of voice messages issued by the audio system. On systems with external sound processing (e.g. Canton), it may not be available.
 0xDA0			b:10:0xC0030009		[LO]_audio_management_mute_hmi_constant  — contains sound mute settings on MIB2 STD and HIGH.
-0xF00 / 0x3F00	??????????????		[LO]_audio_parameter_telephone = 0xF00 (MIB2 Entry), 0x3F00 (MIB2 STD) — sets the sound parameters of the telephone according to the type of sound processing system and the number of speakers
-????			??????????????		[LO]_audio_parameter_SDS — voice control system settings. It is not used on MIB2.
-0x700 / 0x7100	??????????????		[LO]_audio_parameter_individual_sound_processing - 0x700 (MIB2 Entry/Swing2 until 2017 with firmware version 6xxx and MIB STD2), 0x7100 (MIB2 Entry/Swing2 c 2017 and MIB2 GP/Swing3 with firmware 7xxx, 8xxx) — configures additional sound processing Škoda Surround (Arkamys) and Virtual Subwoofer are included in the sound settings
+0x2C00 / 0x440	b:0:0xC0030000 / b:10:0xC0030000	[LO]_powermanagment_timer_dataset - 0x440 (MIB2 Entry/STD), 0x2C00 (MIB2 HIGH) — contains power management settings
+0x2D00			b:10:0xC0030006		[LO]_visible_MMI_language_dataset — contains strings-identifiers of languages available for selection in the user interface language settings menu. These languages must be available in the file \tsd\hmi\HMI\config\lang_hmi_builtin.config (MIB STD2) or \mmx\eso\hmi\lsd\lang_hmi_builtin.config (MIB2 HIGH) of the installed firmware. The first byte in your data is the number of available languages:
 0x2F00			b:0:0xC0030016		[LO]_eco_HMI_dataset  — configures the GreenDrive/EcoTrainer assistant algorithms according to the type of gearbox and engine power
+0x3000			b:0:0xC0030014		[LO]_audio_parameter_sound_dataset — configures basic sound processing. It depends on the number of speakers, left/right-hand drive, geometry of the interior of the car, and so on. On systems with external sound processing (e.g. Canton), it may not be available.
+????			??????????????		[LO]_audio_parameter_SDS — voice control system settings. It is not used on MIB2.
+0x3600			b:0:0xC0030022 		[LO]_audio_parameter_sound_announcement_dataset — configures the sound processing of voice messages issued by the audio system. On systems with external sound processing (e.g. Canton), it may not be available.
 0x3900			??????????????		[LO]_audio_parameter_sound_cabrio_processing — configures sound processing parameters for cars with open top/roof
 0x3B00			b:0:0xC0030020		[LO]_audio_parameter_sound_configuration_dataset — configures the type of sound system used (passive speakers or Canton) and its characteristics
+0x3F00 / 0xF00	??????????????		[LO]_audio_parameter_telephone = 0xF00 (MIB2 Entry), 0x3F00 (MIB2 STD) — sets the sound parameters of the telephone according to the type of sound processing system and the number of speakers
 0x4500			b:0:0xC0030024		[LO]_speech_signal_enhancement_dataset — on units supporting this technology, configures additional voice processing of the voice control assistant
 0x7000			b:0:0xC0030026 		[LO]_in_car_communication — configures the settings of the electronic voice amplifier
+0x7100 / 0x700	??????????????		[LO]_audio_parameter_individual_sound_processing - 0x700 (MIB2 Entry/Swing2 until 2017 with firmware version 6xxx and MIB STD2), 0x7100 (MIB2 Entry/Swing2 c 2017 and MIB2 GP/Swing3 with firmware 7xxx, 8xxx) — configures additional sound processing Škoda Surround (Arkamys) and Virtual Subwoofer are included in the sound settings
 ????			??????????????		[LO]_air_quality — configures the control of the air cleaning system where this function is supported
 
 how to flash dataset without ODIS/VCP
