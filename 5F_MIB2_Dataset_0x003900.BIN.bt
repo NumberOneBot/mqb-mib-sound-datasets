@@ -1,0 +1,285 @@
+//------------------------------------------------
+//--- 010 Editor v13.0 Binary Template
+//
+//      File: 0x003900.BIN
+//   Authors: Alex Strelets
+//   Version: 0.1
+//   Purpose: Parse the contents of the MIB2 Sound Channels and Effects. 
+//  Category:
+// File Mask:
+//  ID Bytes:
+//   History: 0.1 - Initial version
+//------------------------------------------------
+
+BigEndian();
+
+string getSignalflow(int type) {
+    switch (type) {
+        case 0x10: return "2ch (4.0)";
+        case 0x20: return "4ch (8.0)";
+        case 0x21: return "4ch / 2ch compatible (8.0 / 4.0)";
+        case 0x25: return "5ch center (9.0)";
+        case 0x30: return "6ch center sub (9.1)";
+        case 0x31: return "6ch center sub / 2/4ch compatible (9.1 / 8.0 / 4.0)";
+        case 0x32: return "6ch doublesub (8.2)";
+        case 0x33: return "6ch doublesub / 2/4ch compatible (8.2 / 8.0 / 4.0)";
+        case 0x34: return "6ch frontwoofer (9.1)";
+        case 0x35: return "6ch frontwoofer / 2/4ch compatible (9.1 / 8.0 / 4.0)";
+        default:   return "Unknown";
+    }
+}
+
+string getFilterType(int type) {
+    switch (type) {
+        case 0x00: return "Bypass";
+        case 0x01: return "Shelf 1 High";
+        case 0x02: return "Shelf 2 High";
+        case 0x03: return "Shelf 1 Low";
+        case 0x04: return "Shelf 2 Low";
+        case 0x05: return "Peak 1";
+        case 0x06: return "Peak 2";
+        case 0x07: return "Highpass 1";
+        case 0x08: return "Highpass 2";
+        case 0x09: return "Lowpass 1";
+        case 0x0A: return "Lowpass 2";
+        case 0x10: return "Coefficients";
+        default:   return "Unknown";
+    }
+}
+
+typedef struct {
+    ubyte type <bgcolor=cAqua, read=getFilterType>;
+    ubyte quality <bgcolor=cLtGreen>;   // [0.2 .. 5]
+    ushort frequency <bgcolor=cGreen>;  // [20 .. 20000]
+    ubyte gainOffset <bgcolor=cDkAqua>; // [-6 .. +6]
+    ubyte maxGain <bgcolor=cDkAqua>;    // [0  .. 15]
+} EQ;
+
+typedef struct {
+    ubyte type <bgcolor=cAqua, read=getFilterType>;
+    ubyte quality <bgcolor=cLtGreen>;
+    ushort frequency <bgcolor=cGreen>;
+    ubyte gain[19] <bgcolor=cDkAqua>;
+} EQ2;
+
+typedef struct (int length) {
+    ubyte type <bgcolor=cAqua, read=getFilterType>;
+    ubyte quality <bgcolor=cLtGreen>;
+    ushort frequency <bgcolor=cGreen>;
+    byte gain <bgcolor=cDkAqua>; // [-12.5 .. 12.5]
+    ubyte coefficients[length] <bgcolor=cDkGray>;
+} EQ3;
+
+typedef struct {
+    EQ3 Filter1(0);
+    EQ3 Filter2(0);
+    EQ3 Filter3(0);
+    EQ3 Filter4(0);
+    EQ3 Filter5(0);
+    EQ3 Filter6(0);
+    EQ3 Filter7(0);
+    byte Gain <bgcolor=cLtYellow>;
+    ubyte Delay <bgcolor=cYellow>;
+    ubyte Phase <bgcolor=cDkYellow>;
+} CarEQ;
+
+float calcQuality (ubyte value) {
+    return (float) value / 10;
+}
+
+float calcGain (byte value) {
+    return (float) value / 12.5;
+}
+
+float calcAbsGain (ubyte value) {
+    return (float) value / 12.5;
+}
+
+float calcMaxGain (ubyte value) {
+    return (float) value / 15;
+}
+
+void printEQ2(EQ2 &s, string name, int unknownFlag) {
+    Printf("\n%s", name);
+    Printf("\nType    \tQ Factor\tFrequency\n");
+    Printf("==================================\n");
+    Printf("%-13s%7.1f\t %6gHz\n",
+        getFilterType(s.type),
+        calcQuality(s.quality),
+        s.frequency);
+    Printf("==================================\n");
+    if (!unknownFlag) {
+        Printf("Volume: \t");
+        for (i = 0; i < 19; i++) {
+            Printf("%5g ", 18 - i);
+        }
+        Printf("\n");
+    }
+    Printf("Gain:   \t");
+    for (i = 0; i < 19; i++) {
+        Printf("%5.2f ", calcAbsGain(s.gain[i]));
+    }
+    Printf("\n");
+}
+
+local string spacer = "\t\t\t";
+
+void printEQFilter(EQ3 &filter, int index) {
+    local string str = (index > 1 ? "\n" : spacer);
+    Printf("%-13s  %5.1f\t  %6gHz\t      %5.2f %s",
+        getFilterType(filter.type),
+        calcQuality(filter.quality),
+        filter.frequency,
+        calcGain(filter.gain),
+        str);
+}
+
+void printProfileName (int index) {
+    Printf("[ CarEQ SoundProfile #%i ]                       %s", index, index > 1 ? "\n\n": spacer);
+}
+
+string getChannelName(int index) {
+    switch (index) {
+        case 0: return "REAR_R_CH "; break;
+        case 1: return "FRONT_R_CH"; break;
+        case 2: return "FRONT_L_CH"; break;
+        case 3: return "REAR_L_CH "; break;
+        case 4: return "SUBWOOFER "; break;
+        case 5: return "CENTER_CH "; break;
+    }
+    return Str("CHANNEL_%i ", index+1);
+}
+
+string getEQBand(int index) {
+    switch (index) {
+        case 0: return "Bass"; break;
+        case 1: return "MidBass "; break;
+        case 2: return "Middle"; break;
+        case 3: return "MidTreble"; break;
+        case 4: return "Treble"; break;
+    }
+    return Str("Band_%i ", index+1);
+}
+
+void printChannelHeader(CarEQ eq[], int index, int profileIndex) {
+    local string str = (profileIndex > 1 ? "\n" : spacer);
+
+    Printf("%s [ Gain: %-6.2f Delay: %-2gms Phase: %s ]%s",
+        getChannelName(index),
+        calcGain(eq[index].Gain),
+        (float) eq[index].Delay,
+        (char) eq[index].Phase > 0 ? 'R' : '0',
+        str);
+}
+
+void printLines() {
+    local string str = "------------------------------------------------%s";
+    Printf(str, spacer);
+    Printf(str, "\n");
+}
+
+void printDoubleLines() {
+    local string str = "================================================%s";
+    Printf(str, spacer);
+    Printf(str, "\n");
+}
+
+void printFiltersHeader() {
+    local string str = "Type    \tQ Factor\t Frequency\t       Gain %s";
+    Printf(str, spacer);
+    Printf(str, "\n");
+}
+
+
+byte Signalflow <bgcolor=cDkGreen, read=getSignalflow>;
+
+CarEQ Profile_1[6];
+CarEQ Profile_2[6];
+
+FSeek(FileSize() - 4 - 0x1e - 6);
+
+// one of those bytes could be "Limiter THDmax" [0 .. 30]
+struct {
+    byte unknown[5] <bgcolor=cPurple>;
+    byte THDmax <bgcolor=cBlue>;
+} Limiters; // Warmth ??? potentially
+
+struct {
+    ubyte attackTime <bgcolor=cDkGreen>;
+    ushort releaseTime <bgcolor=cGreen>;
+    ubyte threshold <bgcolor=cLtGreen>;
+    ubyte holdTime <bgcolor=cAqua>;
+} DRC[6];
+
+struct {
+    char major <bgcolor=cDkBlue>;
+    char minor <bgcolor=cDkBlue>;
+} DatasetVersion;
+ushort checksum <bgcolor=cDkRed>;
+
+////////////////////////
+/// PARSING FINISHED ///
+////////////////////////
+
+
+
+Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
+
+Printf("\n\n");
+
+local int i = 0;
+local int j = 0;
+local int k = 0;
+
+printProfileName(1);
+printProfileName(2);
+for (i = 0; i < 6; i++) {
+    printChannelHeader(Profile_1, i, 1);
+    printChannelHeader(Profile_2, i, 2);
+    printLines();
+    printFiltersHeader();
+    printDoubleLines();
+    printEQFilter(Profile_1[i].Filter1, 1);
+    printEQFilter(Profile_2[i].Filter1, 2);
+    printEQFilter(Profile_1[i].Filter2, 1);
+    printEQFilter(Profile_2[i].Filter2, 2);
+    printEQFilter(Profile_1[i].Filter3, 1);
+    printEQFilter(Profile_2[i].Filter3, 2);
+    printEQFilter(Profile_1[i].Filter4, 1);
+    printEQFilter(Profile_2[i].Filter4, 2);
+    printEQFilter(Profile_1[i].Filter5, 1);
+    printEQFilter(Profile_2[i].Filter5, 2);
+    printEQFilter(Profile_1[i].Filter6, 1);
+    printEQFilter(Profile_2[i].Filter6, 2);
+    printEQFilter(Profile_1[i].Filter7, 1);
+    printEQFilter(Profile_2[i].Filter7, 2);
+    printDoubleLines();
+    Printf("\n");
+}
+
+
+Printf("LIMITERS\n");
+Printf("\t\t           THD\n");
+Printf("---------------------------------------\n");
+for (i = 0; i < 5; i++) {
+    Printf("%3i    ", Limiters.unknown[i]);
+}
+Printf("%3i", Limiters.THDmax);
+Printf("\n\n");
+
+Printf("DYNAMIC RANGE COMPRESSION\n");
+Printf("Channel    Threshold   Attack    Hold   Release\n");
+Printf("================================================\n");
+for (i = 0; i < 6; i++) {
+    Printf("%s   %5.1fdB   %6.1f  %6.1f    %4gms\n",
+        getChannelName(i),
+        DRC[i].threshold / -20,         // [-20 .. 0 ]
+        (float) DRC[i].attackTime / 20, // [0.5 .. 20]
+        (float) DRC[i].holdTime / 20,   // [0.5 .. 20]
+        DRC[i].releaseTime              // [5 .. 2000]
+    );
+}
+Printf("================================================");
+
+local ushort file_checksum = Checksum(CHECKSUM_CRCCCITT, 0, FileSize() - 2, -1, -1); // algo, size, length, poly, init
+Printf("\n\nFILE CHECKSUM: %.04X", file_checksum);
