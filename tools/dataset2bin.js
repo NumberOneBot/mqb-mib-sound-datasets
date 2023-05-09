@@ -16,12 +16,12 @@ const {
 if (help) {
 	console.log(`
 Usage:
-  dataset2bin [file] [options]
+	dataset2bin [file] [options]
 
 Extracts all data blocks packed in MQB dataset as binary or hex files.
 
 OPTIONS
-  --format=[hex|bin]     format of the data, default value is 'bin'
+	--format=[hex|bin]     format of the data, default value is 'bin'
 `);
 	return;
 }

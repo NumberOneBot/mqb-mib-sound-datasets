@@ -1,12 +1,12 @@
-const fs = require('fs');
-const clc = require('cli-color');
-const polycrc = require('polycrc');
-const argv = require('minimist')(process.argv.slice(2));
+const fs = require("fs");
+const clc = require("cli-color");
+const polycrc = require("polycrc");
+const argv = require("minimist")(process.argv.slice(2));
 
 const crc16Calculator = polycrc.crc(16, 0x1021, 0xffff, 0, false); // size, poly, init, xorout, refin/refout
 
 if (!argv._.length) {
-	console.log(clc.yellow('\nNo file name(s) provided'));
+	console.log(clc.yellow("\nNo file name(s) provided"));
 	argv.help = true;
 }
 
@@ -14,9 +14,9 @@ const {
 	_: files,
 	zdc = true, // use ZDC prefixes
 	caret = 16, // add CR every N bytes
-	output = 'DATASET', // default name for output
-	container = 'odis',
-	crc16 = 'yes',
+	output = "DATASET", // default name for output
+	container = "odis",
+	crc16 = "yes",
 	help = false
 } = argv;
 
@@ -43,7 +43,8 @@ const odisTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 <RESULT>
 <RESPONSE NAME="GetParametrizeData" DTD="RepairHints" VERSION="1.4.7.1" ID="0">
 <DATA>
-<REQUEST_ID>000000000</REQUEST_ID><!--PARAMETERS-->
+<REQUEST_ID>000000000</REQUEST_ID>
+<!--PARAMETERS-->
 <COMPOUNDS>
 <COMPOUND COMPOUND_ID="1">
 <SW_NAME/>
@@ -76,7 +77,6 @@ const odisTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 </INFORMATION>
 <DSD_DATA>
 <COMPRESSED_DATA CONTENT="DSD-Files" CONTENT_TYPE="application/tar" CONTENT_TRANSFER_ENCODING="base64" BYTES_UNCOMPRESSED="0" BYTES_COMPRESSED="0">
-
 </COMPRESSED_DATA>
 </DSD_DATA>
 </DATA>
@@ -84,10 +84,7 @@ const odisTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 </RESULT>
 </MESSAGE>`;
 
-const vcpTemplate = `<?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE ZDC PUBLIC "ZDC020401.dtd"
-                     "ZDC020401.dtd">
-<?xml-stylesheet href="ZDC020401.xsl" type="text/xsl"?>
+const vcpTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 <ZDC>
 <IDENT>
 <DATEINAME>ASAM_ODX</DATEINAME>
@@ -109,30 +106,30 @@ const vcpTemplate = `<?xml version="1.0" encoding="ISO-8859-1"?>
 </VORSCHRIFT>
 </ZDC>`;
 
-const prettify = (value, length = 2) => value.toString(16).padStart(length, '0');
+const prettify = (value, length = 2) => value.toString(16).padStart(length, "0");
 
-let parameters = '';
+let parameters = "";
 let zdcName;
 
 files.map((filename) => {
 	try {
-		zdcName = zdc ? filename.slice(0, filename.indexOf('.')) : '';
+		zdcName = zdc ? filename.slice(0, filename.indexOf(".")) : "";
 		const binaryData = fs.readFileSync(filename),
-			hexArray = [...binaryData].map((char) => '0x' + prettify(char)),
+			hexArray = [...binaryData].map((char) => "0x" + prettify(char)),
 			crcData = Uint8Array.from([...binaryData].slice(0, -2)),
 			crc = prettify(crc16Calculator(crcData), 4);
 
-		if (crc16 === 'yes') {
-			hexArray.splice(-2, 2, '0x' + crc.substr(0, 2), '0x' + crc.substr(2, 4));
+		if (crc16 === "yes") {
+			hexArray.splice(-2, 2, "0x" + crc.substr(0, 2), "0x" + crc.substr(2, 4));
 		}
 
 		const hexData = hexArray
-				.join(',')
-				.replace(new RegExp('(.{' + caret * 5 + '})', 'g'), '$1\n'),
-			address = filename.split('.').slice(-2, -1)[0],
-			dataSize = '0x' + binaryData.length.toString(16),
+				.join(",")
+				.replace(new RegExp("(.{" + caret * 5 + "})", "g"), "$1\n"),
+			address = filename.split(".").slice(-2, -1)[0],
+			dataSize = "0x" + binaryData.length.toString(16),
 			parametersName = filename.slice(
-				zdc ? filename.indexOf('.') + 1 : 0,
+				zdc ? filename.indexOf(".") + 1 : 0,
 				filename.indexOf(address) - 1
 			),
 			parametersVcpTemplate = `
@@ -149,23 +146,23 @@ ${hexData}
 <PARAMETER_DATA DIAGNOSTIC_ADDRESS="0x5F" START_ADDRESS="${address}" PR_IDX="" ZDC_NAME="${zdcName}" ZDC_VERSION="0003" LOGIN="20103" LOGIN_IND="" DSD_TYPE="1" SESSIONNAME="" FILENAME="">
 ${hexData}
 </PARAMETER_DATA>`;
-		if (container === 'odis') {
+		if (container === "odis") {
 			parameters += parametersOdisTemplate;
 		} else {
 			parameters += parametersVcpTemplate;
 		}
 	} catch (err) {
-		console.log('Error reading binary files', err);
+		console.log("Error reading binary files", err);
 		parameters = false;
 	}
 });
 if (parameters) {
-	const data = (container === 'odis' ? odisTemplate : vcpTemplate)
-			.replace('<!--PARAMETERS-->', parameters)
-			.replace('<!--ZDC-->', zdcName),
-		outName = (zdcName ? zdcName + '.' : '') + output + '.' + container.toUpperCase();
+	const data = (container === "odis" ? odisTemplate : vcpTemplate)
+			.replace("<!--PARAMETERS-->", parameters)
+			.replace("<!--ZDC-->", zdcName),
+		outName = (zdcName ? zdcName + "." : "") + output + "." + container.toUpperCase();
 	fs.writeFile(`${outName}.xml`, data, (err) => {
 		if (err) return console.log(err);
-		console.log(clc.cyan(`${outName}.xml`) + ' created');
+		console.log(clc.cyan(`${outName}.xml`) + " created");
 	});
 }
