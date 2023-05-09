@@ -84,7 +84,10 @@ const odisTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 </RESULT>
 </MESSAGE>`;
 
-const vcpTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+const vcpTemplate = `<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE ZDC PUBLIC "ZDC0205.dtd"
+                     "ZDC0205.dtd">
+<?xml-stylesheet href="ZDC0205.xsl" type="text/xsl"?>
 <ZDC>
 <IDENT>
 <DATEINAME>ASAM_ODX</DATEINAME>

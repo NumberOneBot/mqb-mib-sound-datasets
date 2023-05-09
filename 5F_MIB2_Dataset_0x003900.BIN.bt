@@ -62,22 +62,21 @@ typedef struct {
     ubyte gain[19] <bgcolor=cDkAqua>;
 } EQ2;
 
-typedef struct (int length) {
+typedef struct {
     ubyte type <bgcolor=cAqua, read=getFilterType>;
     ubyte quality <bgcolor=cLtGreen>;
     ushort frequency <bgcolor=cGreen>;
     byte gain <bgcolor=cDkAqua>; // [-12.5 .. 12.5]
-    ubyte coefficients[length] <bgcolor=cDkGray>;
 } EQ3;
 
 typedef struct {
-    EQ3 Filter1(0);
-    EQ3 Filter2(0);
-    EQ3 Filter3(0);
-    EQ3 Filter4(0);
-    EQ3 Filter5(0);
-    EQ3 Filter6(0);
-    EQ3 Filter7(0);
+    EQ3 Filter1;
+    EQ3 Filter2;
+    EQ3 Filter3;
+    EQ3 Filter4;
+    EQ3 Filter5;
+    EQ3 Filter6;
+    EQ3 Filter7;
     byte Gain <bgcolor=cLtYellow>;
     ubyte Delay <bgcolor=cYellow>;
     ubyte Phase <bgcolor=cDkYellow>;
@@ -193,8 +192,8 @@ void printFiltersHeader() {
 
 byte Signalflow <bgcolor=cDkGreen, read=getSignalflow>;
 
-CarEQ Profile_1[6];
-CarEQ Profile_2[6];
+CarEQ Profile_1[6] <optimize=true>;
+CarEQ Profile_2[6] <optimize=true>;
 
 FSeek(FileSize() - 4 - 0x1e - 6);
 
