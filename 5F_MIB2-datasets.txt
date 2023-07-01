@@ -1,4 +1,4 @@
-HEX/ZDC			M.I.B				Dataset name
+HEX/ZDC				M.I.B				Dataset name
 ????				????				[LO]_DTCP_dataset — designed to protect content transmitted via IP protocol. It is not used on MIB2
 0x000200			b:10:0xC0030004		[LO]_ASAM_ODX_MUX_dataset - unit identifier string is stored here.
 0x000240			b:10:0xC0030002		[LO]_hmi_control_speed_dataset - responsible for disabling functions when speed thresholds are exceeded

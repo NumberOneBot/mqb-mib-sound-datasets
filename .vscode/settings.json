@@ -1,6 +1,7 @@
 {
-    "C_Cpp.errorSquiggles": "disabled",
-    "files.associations": {
-        "*.BIN.bt": "c"
-    }
+	"C_Cpp.errorSquiggles": "disabled",
+	"files.associations": {
+		"*.BIN.bt": "c",
+		"*.bt": "c"
+	}
 }

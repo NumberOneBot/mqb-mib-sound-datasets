@@ -3,7 +3,7 @@
 //
 //      File: 0x003000.BIN
 //   Authors: Alex Strelets
-//   Version: 0.5
+//   Version: 0.6
 //   Purpose: Parse the contents of the MIB2 Sound Channels and Effects
 //  Category:
 // File Mask:
@@ -14,22 +14,24 @@
 //            0.5 - 'Sound Effects' table optimizations,
 //                  renaming, refactoring, cleanup
 //            0.5.1 -  THD max property found
+//            0.6 - Delay value fixed, gain values fixed,
+//                  special channel names added for 32 - 35 signal flows
 //------------------------------------------------
 
 BigEndian();
 
 string getSignalflow(int type) {
     switch (type) {
-        case 0x10: return "2ch (4.0)";
-        case 0x20: return "4ch (8.0)";
-        case 0x21: return "4ch / 2ch compatible (8.0 / 4.0)";
-        case 0x25: return "5ch center (9.0)";
-        case 0x30: return "6ch center sub (9.1)";
-        case 0x31: return "6ch center sub / 2/4ch compatible (9.1 / 8.0 / 4.0)";
-        case 0x32: return "6ch doublesub (8.2)";
-        case 0x33: return "6ch doublesub / 2/4ch compatible (8.2 / 8.0 / 4.0)";
-        case 0x34: return "6ch frontwoofer (9.1)";
-        case 0x35: return "6ch frontwoofer / 2/4ch compatible (9.1 / 8.0 / 4.0)";
+        case 0x10: return "2 channels";
+        case 0x20: return "4 channels";
+        case 0x21: return "4 channels / 2 channels compatible";
+        case 0x25: return "5 channels (5.0)";
+        case 0x30: return "6 channels (5.1)";
+        case 0x31: return "6 channels (5.1) / 4ch / 2ch compatible";
+        case 0x32: return "6 channels (4.2)";
+        case 0x33: return "6 channels (4.2) / 4ch / 2ch compatible";
+        case 0x34: return "6 channels (4.0 bi-amping)";
+        case 0x35: return "6 channels (4.0 bi-amping) / 4ch / 2ch compatible";
         default:   return "Unknown";
     }
 }
@@ -37,16 +39,16 @@ string getSignalflow(int type) {
 string getFilterType(int type) {
     switch (type) {
         case 0x00: return "Bypass";
-        case 0x01: return "Shelf 1 High";
-        case 0x02: return "Shelf 2 High";
-        case 0x03: return "Shelf 1 Low";
-        case 0x04: return "Shelf 2 Low";
-        case 0x05: return "Peak 1";
-        case 0x06: return "Peak 2";
-        case 0x07: return "Highpass 1";
-        case 0x08: return "Highpass 2";
-        case 0x09: return "Lowpass 1";
-        case 0x0A: return "Lowpass 2";
+        case 0x01: return "High Shelf 1";
+        case 0x02: return "High Shelf 2";
+        case 0x03: return "Low Shelf 1 ";
+        case 0x04: return "Low Shelf 2";
+        case 0x05: return "Unknown"; // Should be "Notch" but not used
+        case 0x06: return "Peak ";
+        case 0x07: return "High Pass 1";
+        case 0x08: return "High Pass 2";
+        case 0x09: return "Low Pass 1";
+        case 0x0A: return "Low Pass 2";
         case 0x10: return "Coefficients";
         default:   return "Unknown";
     }
@@ -93,18 +95,18 @@ float calcQuality (ubyte value) {
 }
 
 float calcGain (byte value) {
-    return (float) value / 12.5;
+    return (float) value / 20;
 }
 
 float calcAbsGain (ubyte value) {
-    return (float) value / 12.5;
+    return (float) value / 20;
 }
 
 float calcMaxGain (ubyte value) {
     return (float) value / 15;
 }
 
-void printEQ2(EQ2 &s, string name, int unknownFlag) {
+void printEQ2(EQ2 &s, string name) {
     Printf("\n%s", name);
     Printf("\nType    \tQ Factor\tFrequency\n");
     Printf("==================================\n");
@@ -113,13 +115,6 @@ void printEQ2(EQ2 &s, string name, int unknownFlag) {
         calcQuality(s.quality),
         s.frequency);
     Printf("==================================\n");
-    if (!unknownFlag) {
-        Printf("Volume: \t");
-        for (i = 0; i < 19; i++) {
-            Printf("%5g ", 18 - i);
-        }
-        Printf("\n");
-    }
     Printf("Gain:   \t");
     for (i = 0; i < 19; i++) {
         Printf("%5.2f ", calcAbsGain(s.gain[i]));
@@ -131,7 +126,7 @@ local string spacer = "\t\t\t";
 
 void printEQFilter(EQ3 &filter, int index) {
     local string str = (index > 1 ? "\n" : spacer);
-    Printf("%-13s  %5.1f\t  %6gHz\t      %5.2f %s",
+    Printf("%-13s  %5.1f\t  %6gHz\t    %5.2fdB %s",
         getFilterType(filter.type),
         calcQuality(filter.quality),
         filter.frequency,
@@ -140,28 +135,39 @@ void printEQFilter(EQ3 &filter, int index) {
 }
 
 void printProfileName (int index) {
-    Printf("[ CarEQ SoundProfile #%i ]                       %s", index, index > 1 ? "\n\n": spacer);
+    Printf("[ CarEQ SoundEffects #%i ]                       %s", index, index > 1 ? "\n\n": spacer);
 }
 
-string getChannelName(int index) {
+string getChannelName(int index, byte signalFlow) {
+    if ((signalFlow == 0x32 || signalFlow == 0x33) && index == 5) {
+        return "SUBWOOFER 2";
+    } else if (signalFlow >= 0x34) {
+        switch (index) {
+            case 1: return "RIGHT_TWETR"; break;
+            case 2: return "LEFT_TWEETR"; break;
+            case 4: return "RIGHT_WOOFR"; break;
+            case 5: return "LEFT_WOOFER"; break;
+        }
+    }
+
     switch (index) {
-        case 0: return "REAR_R_CH "; break;
-        case 1: return "FRONT_R_CH"; break;
-        case 2: return "FRONT_L_CH"; break;
-        case 3: return "REAR_L_CH "; break;
-        case 4: return "SUBWOOFER "; break;
-        case 5: return "CENTER_CH "; break;
+        case 0: return "REAR_RIGHT "; break;
+        case 1: return "FRONT_RIGHT"; break;
+        case 2: return "FRONT_LEFT "; break;
+        case 3: return "REAR_LEFT  "; break;
+        case 4: return "SUBWOOFER  "; break;
+        case 5: return "CENTER     "; break;
     }
     return Str("CHANNEL_%i ", index+1);
 }
 
 string getEQBand(int index) {
     switch (index) {
-        case 0: return "Bass"; break;
-        case 1: return "MidBass "; break;
-        case 2: return "Middle"; break;
-        case 3: return "MidTreble"; break;
-        case 4: return "Treble"; break;
+        case 0: return "Bass      "; break;
+        case 1: return "Mid-Bass  "; break;
+        case 2: return "Middle    "; break;
+        case 3: return "Mid-Treble"; break;
+        case 4: return "Treble    "; break;
     }
     return Str("Band_%i ", index+1);
 }
@@ -169,10 +175,10 @@ string getEQBand(int index) {
 void printChannelHeader(CarEQ eq[], int index, int profileIndex) {
     local string str = (profileIndex > 1 ? "\n" : spacer);
 
-    Printf("%s [ Gain: %-6.2f Delay: %-2gms Phase: %s ]%s",
-        getChannelName(index),
+    Printf("%s [ Gain: %-4.1f Delay: %-2.1fms Phase: %s ]%s",
+        getChannelName(index, Signalflow),
         calcGain(eq[index].Gain),
-        (float) eq[index].Delay,
+        (float) eq[index].Delay / 10,
         (char) eq[index].Phase > 0 ? 'R' : '0',
         str);
 }
@@ -204,15 +210,15 @@ EQ2 LoudnessHigh;
 struct {
     ubyte value[19] <bgcolor=cGray>;
 } GALA[7];
-EQ2 UnknownFilter_1;
-EQ2 UnknownFilter_2;
-CarEQ Profile_1[6] <optimize=true>;
-CarEQ Profile_2[6] <optimize=true>;
+EQ2 VirtualSubwoofer;
+EQ2 GADK;
+CarEQ Profile1[6] <optimize=true>;
+CarEQ Profile2[6] <optimize=true>;
 
-// one of those bytes could be "Limiter THDmax" [0 .. 30]
+// one of those bytes is "Limiter MaxTHD" [0 .. 70]
 struct {
     byte unknown[6] <bgcolor=cPurple>;
-    byte THDmax <bgcolor=cBlue>;
+    byte MaxTHD <bgcolor=cBlue>;
 } Limiters; // Warmth ??? potentially
 
 struct {
@@ -243,8 +249,9 @@ Printf("\nSIGNAL FLOW: %s\n", getSignalflow(Signalflow));
 Printf("\nEQ TONE CONTROLS");
 Printf("\nBand     \tType     \tQ Factor\tFrequency\t  MaxGain\tGainOffset\n");
 Printf("=======================================================================\n");
+Printf("Subwoofer                        \t            %7.2fdB\n", calcMaxGain(Subwoofer_maxGain));
 for (i = 0; i < 5; i++) {
-    Printf("%-8s\t%-13s%7.1f\t %6gHz\t  %7.2f\t%10.2f\n",
+    Printf("%-8s\t%-13s%7.1f\t %6gHz\t%7.2fdB\t%10.2f\n",
         getEQBand(i),
         getFilterType(ToneControls[i].type),
         calcQuality(ToneControls[i].quality),
@@ -253,11 +260,12 @@ for (i = 0; i < 5; i++) {
         ToneControls[i].gainOffset / 12);
 }
 Printf("=======================================================================\n");
-Printf("Subwoofer                        \t              %7.2f\n", calcMaxGain(Subwoofer_maxGain));
 
 
-printEQ2(LoudnessLow, "LOUDNESS LOW", false);
-printEQ2(LoudnessHigh, "LOUDNESS HIGH", false);
+printEQ2(LoudnessLow, "LOUDNESS - Bass Boost");
+printEQ2(LoudnessHigh, "LOUDNESS - Treble Boost");
+printEQ2(VirtualSubwoofer, "VIRTUAL SUBWOOFER");
+printEQ2(GADK, "GADK (3D SURROUND SOUND EFFECT)");
 
 Printf("\nGALA (SPEED-DEPENDENT VOLUME CONTROL)");
 Printf("\nLevel   \t Gain\n");
@@ -275,33 +283,30 @@ Printf("==========================================");
 Printf("==========================================");
 Printf("==========================================\n");
 
-printEQ2(UnknownFilter_1, "UNKNOWN FILTER 1", true);
-printEQ2(UnknownFilter_2, "UNKNOWN FILTER 2", true);
-
 Printf("\n");
 
 printProfileName(1);
 printProfileName(2);
 for (i = 0; i < 6; i++) {
-    printChannelHeader(Profile_1, i, 1);
-    printChannelHeader(Profile_2, i, 2);
+    printChannelHeader(Profile1, i, 1);
+    printChannelHeader(Profile2, i, 2);
     printLines();
     printFiltersHeader();
     printDoubleLines();
-    printEQFilter(Profile_1[i].Filter1, 1);
-    printEQFilter(Profile_2[i].Filter1, 2);
-    printEQFilter(Profile_1[i].Filter2, 1);
-    printEQFilter(Profile_2[i].Filter2, 2);
-    printEQFilter(Profile_1[i].Filter3, 1);
-    printEQFilter(Profile_2[i].Filter3, 2);
-    printEQFilter(Profile_1[i].Filter4, 1);
-    printEQFilter(Profile_2[i].Filter4, 2);
-    printEQFilter(Profile_1[i].Filter5, 1);
-    printEQFilter(Profile_2[i].Filter5, 2);
-    printEQFilter(Profile_1[i].Filter6, 1);
-    printEQFilter(Profile_2[i].Filter6, 2);
-    printEQFilter(Profile_1[i].Filter7, 1);
-    printEQFilter(Profile_2[i].Filter7, 2);
+    printEQFilter(Profile1[i].Filter1, 1);
+    printEQFilter(Profile2[i].Filter1, 2);
+    printEQFilter(Profile1[i].Filter2, 1);
+    printEQFilter(Profile2[i].Filter2, 2);
+    printEQFilter(Profile1[i].Filter3, 1);
+    printEQFilter(Profile2[i].Filter3, 2);
+    printEQFilter(Profile1[i].Filter4, 1);
+    printEQFilter(Profile2[i].Filter4, 2);
+    printEQFilter(Profile1[i].Filter5, 1);
+    printEQFilter(Profile2[i].Filter5, 2);
+    printEQFilter(Profile1[i].Filter6, 1);
+    printEQFilter(Profile2[i].Filter6, 2);
+    printEQFilter(Profile1[i].Filter7, 1);
+    printEQFilter(Profile2[i].Filter7, 2);
     printDoubleLines();
     Printf("\n");
 }
@@ -312,18 +317,18 @@ Printf("----------------------------------------------\n");
 for (i = 0; i < 6; i++) {
     Printf("%3i    ", Limiters.unknown[i]);
 }
-Printf("%3i", Limiters.THDmax);
+Printf("%3i", Limiters.MaxTHD);
 Printf("\n\n");
 
 Printf("DYNAMIC RANGE COMPRESSION\n");
-Printf("Channel    Threshold   Attack    Hold   Release\n");
+Printf("Channel     Threshold   Attack    Hold   Release\n");
 Printf("================================================\n");
 for (i = 0; i < 6; i++) {
-    Printf("%s   %5.1fdB   %6.1f  %6.1f    %4gms\n",
-        getChannelName(i),
+    Printf("%s   %5.1fdB  %5.1fms  %5.1fms   %4gms\n",
+        getChannelName(i, Signalflow),
         DRC[i].threshold / -20,         // [-20 .. 0 ]
-        (float) DRC[i].attackTime / 20, // [0.5 .. 20]
-        (float) DRC[i].holdTime / 20,   // [0.5 .. 20]
+        (float) DRC[i].attackTime / 20, // [0.5 .. 10]
+        (float) DRC[i].holdTime / 20,   // [0.5 .. 10]
         DRC[i].releaseTime              // [5 .. 2000]
     );
 }
